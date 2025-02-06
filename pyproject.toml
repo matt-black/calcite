@@ -20,6 +20,9 @@ python = ">=3.12,<4.0"
 jax = {extras = ["cuda12"], version = "^0.5.0"}
 jaxtyping = "^0.2.37"
 numpy = "^2.2.2"
+equinox = "^0.11.11"
+optax = "^0.2.4"
+tqdm = "^4.67.1"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.3.4"
