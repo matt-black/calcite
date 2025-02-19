@@ -1,15 +1,20 @@
-""" Private utilities. For internal library use only.
+"""Private utilities. For internal library use only.
 
 To expose a utility function via the public API, import it in `util.py`
 """
 
+from numbers import Number
+from typing import Tuple
+
 import jax
 import jax.numpy as jnp
 import jax.scipy as jsp
+from jax.scipy.spatial.transform import Rotation
 from jax.tree_util import Partial
 from jaxtyping import Array
 from jaxtyping import Complex
 from jaxtyping import Float
+from jaxtyping import Int
 from jaxtyping import Real
 
 
@@ -27,7 +32,7 @@ def binomial_coefficient(
 
 
 def ifft2_centered(
-    centered_fft: Complex[Array, "a a"]
+    centered_fft: Complex[Array, "a a"],
 ) -> Complex[Array, "a a"]:
     """ifft2_centered inverse fft of a centered fft.
 
@@ -56,9 +61,24 @@ def radial_coordinate_grid_2d(size: int) -> Float[Array, "{size} {size}"]:
     Returns:
         Float[Array]: 2d grid of radial coordinate values
     """
-    cent = size / 2
+    cent = size / 2.0
     x, y = jnp.meshgrid(jnp.arange(size), jnp.arange(size))
     return jnp.sqrt(jnp.power(x - cent, 2) + jnp.power(y - cent, 2))
+
+
+def radial_coordinate_grid_3d(size: int) -> Float[Array, "{size} {size}"]:
+    """radial_coordinate_grid_3d 3d grid of radial coordinates for x, y, z.
+
+    Returns:
+        Float[Array]: 3d grid of radial coordinate values
+    """
+    cent = size / 2.0
+    x, y, z = jnp.meshgrid(
+        jnp.arange(size), jnp.arange(size), jnp.arange(size), indexing="xy"
+    )
+    return jnp.sqrt(
+        jnp.power(x - cent, 2) + jnp.power(y - cent, 2) + jnp.power(z - cent, 2)
+    )
 
 
 def angular_coordinate_grid_2d(size: int) -> Float[Array, "{size} {size}"]:
@@ -72,9 +92,32 @@ def angular_coordinate_grid_2d(size: int) -> Float[Array, "{size} {size}"]:
     Returns:
         Float[Array]: 2d square grid of angular values at each coordinate
     """
-    cent = size / 2
-    x, y = jnp.meshgrid(jnp.arange(size), jnp.arange(size))
+    cent = size / 2.0
+    x, y = jnp.meshgrid(jnp.arange(size), jnp.arange(size), indexing="xy")
     return jnp.arctan2(y - cent, x - cent)
+
+
+def angular_coordinate_grids_3d(
+    size: int, alpha: float = 0, beta: float = 0.0, gamma: float = 0.0
+) -> Tuple[Float[Array, "{size} {size}"], Float[Array, "{size} {size}"]]:
+    """angular_coordinate_grids_3d grids for (theta, phi) angle at each point in grid.
+
+    theta is the angle between the x and y axes (`tan^(-1)(y/x)`)
+    phi is the angle relative to the z-axis
+
+    Returns:
+        (Float[Array],Float[Array]): (theta, phi) arrays
+    """
+    x, y, z = jnp.meshgrid(*([jnp.linspace(-size / 2.0, size / 2.0, size)] * 3))
+    c = jnp.stack([x, y, z], axis=-1)
+    # do the rotation
+    if alpha != 0 or beta != 0 or gamma != 0:
+        rot = Rotation.from_euler("zyx", [gamma, beta, alpha], degrees=False)
+        c = jnp.einsum("ij,...j->...i", rot.as_matrix(), c)
+    rho = jnp.sqrt(jnp.sum(jnp.square(c), axis=-1))
+    theta = jnp.arctan2(c[..., 1], c[..., 0])
+    phi = jnp.where(rho > 0, jnp.arccos(c[..., 2] / rho), 0)
+    return theta, phi
 
 
 def shift_remainder(v: Array) -> Array:
@@ -156,3 +199,79 @@ def polarize_filter_bank_2d(
         ],
         axis=-3,
     )
+
+
+def legendre_recurrence(
+    n: Int[Array, " n"], x: Float[Array, " m"], n_max: Int[Array, ""]
+) -> Float[Array, "n m"]:
+    """legendre_recurrence Compute the Legendre polynomials up to degree n_max at a given point or array of points x.
+
+    The first two Legendre polynomials are initialized as P_0(x) = 1 and P_1(x) = x. The subsequent polynomials are computed using the recurrence relation: P_{n+1}(x) = ((2n + 1) * x * P_n(x) - n * P_{n-1}(x)) / (n + 1).
+
+    Args:
+        n_max (int): The highest degree of Legendre polynomial to compute. Must be a non-negative integer.
+        x (Array): The point(s) at which the Legendre polynomials are to be evaluated. Can be a single point (float) or an array of points.
+
+    Returns:
+        Array: A sequence of Legendre polynomial values of shape (n_max+1,) + x.shape, evaluated at point(s) x. The i-th entry of the output array corresponds to the Legendre polynomial of degree i.
+
+    Notes:
+        Implementation taken from: https://github.com/jax-ml/jax/issues/14101
+    """
+    p_init = jnp.zeros((2,) + x.shape)
+    p_init = p_init.at[0].set(1.0)  # Set the 0th degree Legendre polynomial
+    p_init = p_init.at[1].set(x)  # Set the 1st degree Legendre polynomial
+
+    def body_fun(carry, _):
+        i, (p_im1, p_i) = carry
+        p_ip1 = ((2 * i + 1) * x * p_i - i * p_im1) / (i + 1)
+
+        return ((i + 1).astype(int), (p_i, p_ip1)), p_ip1
+
+    (_, (_, _)), p_n = jax.lax.scan(
+        f=body_fun,
+        init=(1, (p_init[0], p_init[1])),
+        xs=(None),
+        length=(n_max - 1),
+    )
+    p_n = jnp.concatenate((p_init, p_n), axis=0)
+    return p_n[n]
+
+
+def eval_legendre(
+    n: Int[Array, " n"], x: Float[Array, " m"]
+) -> Float[Array, "n m"]:
+    """eval_legendre Evaluate Legendre polynomials of specified degrees at provided point(s).
+
+    Parameters:
+        n (Array): An array of integer degrees for which the Legendre polynomials are to be evaluated. Each element must be a non-negative integer and the array can be of any shape.
+        x (Array): The point(s) at which the Legendre polynomials are to be evaluated. Can be a single point (float) or an array of points. The shape must be broadcastable to the shape of 'n'.
+
+    Returns:
+        Array: An array of Legendre polynomial values. The output has the same shape as 'n' and 'x' after broadcasting. The i-th entry corresponds to the Legendre polynomial of degree 'n[i]' evaluated at point 'x[i]'.
+
+    Notes:
+        Implementation taken from: https://github.com/jax-ml/jax/issues/14101
+    """
+    if n == 0:
+        return 1
+    n = jnp.asarray([n]) if isinstance(n, int) else jnp.asarray(n)
+    x = jnp.asarray([x]) if isinstance(x, Number) else jnp.asarray(x)
+    n_max = n.max()
+
+    if n.ndim == 1 and x.ndim == 1:
+        p = jax.vmap(
+            lambda ni: jax.vmap(lambda xi: legendre_recurrence(ni, xi, n_max))(
+                x
+            )
+        )(n)
+        p = jnp.diagonal(
+            p
+        )  # get diagonal elements to match the scipy.special.eval_legendre output
+    else:
+        p = jax.vmap(
+            lambda ni: jax.vmap(lambda xi: legendre_recurrence(ni, xi, n_max))(
+                x
+            )
+        )(n)
+    return jnp.squeeze(p)

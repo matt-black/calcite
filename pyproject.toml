@@ -16,7 +16,7 @@ classifiers = [
 Changelog = "https://github.com/matt-black/calcite/releases"
 
 [tool.poetry.dependencies]
-python = ">=3.12,<4.0"
+python = ">=3.10,<4.0"
 jax = {extras = ["cuda12"], version = "^0.5.0"}
 jaxtyping = "^0.2.37"
 numpy = "^2.2.2"

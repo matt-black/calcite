@@ -1,4 +1,4 @@
-""" Cake wavelets.
+"""Cake wavelets.
 
 2D cake wavelets were introduced in [1], while 3D cake wavelets were introduced in [2].
 
@@ -8,6 +8,9 @@ References
 [2] Janssen, Michiel HJ, et al. "Design and processing of invertible orientation scores of 3D images." Journal of mathematical imaging and vision 60 (2018): 1427-1458.
 """
 
+from typing import Tuple
+
+import jax
 import jax.numpy as jnp
 from jax.scipy.special import factorial
 from jax.tree_util import Partial
@@ -18,9 +21,12 @@ from jaxtyping import Num
 from jaxtyping import Real
 
 from .._util import angular_coordinate_grid_2d
+from .._util import angular_coordinate_grids_3d
 from .._util import binomial_coefficient
+from .._util import eval_legendre
 from .._util import ifft2_centered
 from .._util import radial_coordinate_grid_2d
+from .._util import radial_coordinate_grid_3d
 from .._util import shift_remainder
 
 
@@ -205,18 +211,18 @@ def orientation_bank_2d_fourier(
     """
     s_phi = (2 * jnp.pi) / n_orientations
     # rad_damping gives the "low-pass" component of the frequency-space filtering
-    rad_damping = _radial_window(size, poly_order_hf, inflection_point_hf)
+    rad_damping = _radial_window_2d(size, poly_order_hf, inflection_point_hf)
     if (
         inflection_point_lf is not None
     ):  # setup the high-pass component of the filtering
-        dc_window = _radial_window(size, poly_order_lf, inflection_point_lf)
+        dc_window = _radial_window_2d(size, poly_order_lf, inflection_point_lf)
     else:
         dc_window = jnp.zeros_like(rad_damping)
     bandpass = rad_damping - dc_window
     ang_grid = angular_coordinate_grid_2d(size)
     thetas = jnp.linspace(0, 2 * jnp.pi, n_orientations, False)
     b_splines = [
-        _bspline_profile(
+        _bspline_profile_2d(
             spline_order, shift_remainder(ang_grid - theta) / s_phi
         )
         / overlap_factor
@@ -234,7 +240,7 @@ def orientation_bank_2d_fourier(
         )
 
 
-def _bspline_profile(
+def _bspline_profile_2d(
     n: int, angle_grid: Float[Array, " a a"]
 ) -> Float[Array, " a a"]:
     """_bspline_profile compute b-spline of order k=n+2.
@@ -269,7 +275,7 @@ def _bspline_profile(
     )
 
 
-def _radial_window(
+def _radial_window_2d(
     size: int, n: int, inflection_point: float
 ) -> Float[Array, " {size size}"]:
     """_radial_window windowing function for radial dimension (frequency).
@@ -280,7 +286,7 @@ def _radial_window(
     Args:
         size (int): size of output window (output will be 2d matrix size x size)
         n (int): 1/2 order of Taylor series of inverse
-        inflection_point (float): gamma, 0 << 1, ~sets frequency cutoff
+        inflection_point (float): gamma, 0 >> 1, ~sets frequency cutoff
     Returns:
         Float[Array]
     """
@@ -295,3 +301,149 @@ def _radial_window(
             jnp.power(rho, 2 * k) / factorial(k) * jnp.exp(-jnp.square(rho))
         )
     return window
+
+
+def _radial_window_3d(
+    size: int,
+    gamma: float,
+    nyquist_freq: float,
+    sigma_erf: float | None = None,
+):  # -> Float[Array, " {size} {size} {size}"]:
+    """_radial_window_3d windowing function for radial dimension (frequency) in three dimensions.
+
+    See Eqn. 50, Fig. 5 of [2].
+
+    Args:
+        size (int): size of output window (output will be 3d matrix (size x size x size))
+        gamma (float): controls inflection point of the error function
+        nyquist_freq (float): nyquist frequency of the data
+        sigma_erf (float | None, optional): controls steepness of the decay when approaching the nyquist frequency. Defaults to None, which will use (nyquist-rho2)/3.
+
+    Returns:
+        Float[Array]
+    """
+    rho = radial_coordinate_grid_3d(size)
+    infl_pt = gamma * nyquist_freq  # Eqn. 51
+    if sigma_erf is None:
+        sigma_erf = (nyquist_freq - infl_pt) / 3.0
+    window = 0.5 * (1 - jax.scipy.special.erf((rho - infl_pt) / sigma_erf))
+    return window
+
+
+def _low_frequency_gaussian_window(
+    size: int,
+    s_rho: float,
+) -> Float[Array, "{size} {size} {size}"]:
+    """_low_frequency_gaussian_window filter to pick out low frequencies for wavelet splitting.
+
+    Args:
+        size (int): size of output window
+        s_rho (float): variance of distribution
+
+    Returns:
+        Float[Array]
+    """
+    rho = radial_coordinate_grid_3d(size)
+    vals = (1 / jnp.power(4 * jnp.pi * s_rho, 1.5)) * jnp.exp(
+        -rho / (4 * s_rho)
+    )
+    return vals / jnp.amax(vals)
+
+
+def _coeff_a_0l(ell: int, s0: float) -> float:
+    """_coeff_a_0l coefficient for spherical harmonics in wavelet.
+
+    See Eqn. 58 of [2].
+
+    Args:
+        ell (int): _description_
+        s0 (float): _description_
+
+    Returns:
+        float: the coefficient value
+    """
+    return jnp.sqrt((2 * ell + 1) / (4 * jnp.pi)) * jnp.exp(
+        -ell * (ell + 1) * s0
+    )
+
+
+def _coeff_c_0l(ell: int) -> float:
+    """_coeff_c_0l coefficient for 3D cake wavelet.
+
+    See Eqn. 63 of [2].
+
+    Args:
+        ell (int): _description_
+
+    Returns:
+        float: coefficient value
+    """
+    legendre_l0 = eval_legendre(ell, 0)
+    a_l0 = _coeff_a_0l(ell, 0.25 / 3)
+    return legendre_l0 * a_l0 + (1 - (jnp.pow(-1, ell)) / 2) * a_l0
+
+
+def cake_wavelet_3d_fourier(
+    size: int,
+    gamma_window: float,
+    nyquist_freq: float,
+    sigma_erf: float,
+    alpha: float,
+    beta: float,
+    gamma: float,
+    big_ell: int,
+    centered: bool = False,
+) -> Complex[Array, "{size} {size} {size}"]:
+    """cake_wavelet_3d_fourier 3D cake wavelet, in the Fourier domain.
+
+    Args:
+        size (int): size of output wavelet (will be size^3)
+        gamma_window (float): gamma parameter for the radial window, fixes the inflection point for the rolloff at gamma*nyquist_freq
+        nyquist_freq (float): nyquist frequency of the data (same units as size)
+        sigma_erf (float): controls the steepness of the decay around the Nyquist frequency.
+        alpha (float): rotation around x-axis
+        beta (float): rotation around y-axis
+        gamma (float): rotation around z-axis
+        big_ell (int): order to compute the spherical harmonics up to. In [2], this is "L".
+        centered (bool, optional): whether the wavelet is centered in Fourier space (as if it were `fftshift`'d). Defaults to False.
+
+    Returns:
+        Complex[Array]: a single cake wavelet, in the Fourier domain.
+    """
+    g_rho = _radial_window_3d(size, gamma_window, nyquist_freq, sigma_erf)
+    theta, phi = angular_coordinate_grids_3d(size, alpha, beta, gamma)
+    c_0l = jnp.expand_dims(
+        jnp.asarray([_coeff_c_0l(ell) for ell in range(0, big_ell + 1)]), axis=0
+    )
+    sph_harm = Partial(
+        jax.scipy.special.sph_harm_y,
+        jnp.array([0]),
+        jnp.array(range(0, big_ell + 1)),
+    )
+    sigma_c0l_times_y0l = jnp.sum(
+        c_0l * jax.vmap(sph_harm, (0, 0))(theta.flatten(), phi.flatten()),
+        axis=-1,
+    ).reshape(phi.shape)
+    if centered:
+        return g_rho * sigma_c0l_times_y0l
+    else:
+        return jnp.roll(
+            g_rho * sigma_c0l_times_y0l,
+            (-size / 2, -size / 2, -size / 2),
+            axis=(-3, -2, -1),
+        )
+
+
+def split_cake_wavelet_3d_fourier(
+    wavelet: Complex[Array, "a a a"], s_rho: float
+) -> Tuple[Complex[Array, "a a a"], Complex[Array, "a a a"]]:
+    """split_cake_wavelet_3d_fourier split the wavelet into high/low frequency components.
+
+    See Sect. 2.1.1 of [2], this implements Eqns 18 with Gaussian window specified by Eqn. 19.
+
+    Returns:
+        Tuple[Complex[Array],Complex[Array]]: (low, high) frequency parts of input wavelet.
+    """
+    size = wavelet.shape[0]
+    lf_win = _low_frequency_gaussian_window(size, s_rho)
+    return lf_win * wavelet, (1 - lf_win) * wavelet
