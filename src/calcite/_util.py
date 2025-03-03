@@ -49,6 +49,23 @@ def ifft2_centered(
     return jnp.roll(im, (cent, cent), (0, 1))
 
 
+def ifft3_centered(
+    centered_fft: Complex[Array, "a a a"],
+) -> Complex[Array, "a a a"]:
+    """ifft3_centered Take the 3D inverse FFT of a centered FFT by rolling.
+
+    Args:
+        centered_fft (Complex[Array]): a 3D FFT'd signal, that has been centered.
+
+    Returns:
+        Complex[Array]
+    """
+    cent = centered_fft.shape[0] // 2
+    fft = jnp.roll(centered_fft, (-cent, -cent, -cent), (0, 1, 2))
+    im = jnp.fft.ifftn(fft)
+    return jnp.roll(im, (cent, cent, cent), (0, 1, 2))
+
+
 # polar coordinate grid generation
 def radial_coordinate_grid_2d(size: int) -> Float[Array, "{size} {size}"]:
     """radial_coordinate_grid_2d 2d grid of radial coordinates for x,y.

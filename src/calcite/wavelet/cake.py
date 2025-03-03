@@ -28,6 +28,7 @@ from .._util import ifft2_centered
 from .._util import radial_coordinate_grid_2d
 from .._util import radial_coordinate_grid_3d
 from .._util import shift_remainder
+from ..qsampling import optimize_singleshell
 
 
 def filter_bank_2d(
@@ -240,6 +241,50 @@ def orientation_bank_2d_fourier(
         )
 
 
+def orientation_bank_3d_fourier(
+    size: int,
+    num_ori: int,
+    gamma_window: float,
+    nyquist_freq: float,
+    sigma_erf: float,
+    s_0: float,
+    s_rho: float | None,
+    big_ell: int,
+    centered: bool = False,
+):  # -> Complex[Array, "{num_ori} {size} {size} {size}"]:
+    """orientation_bank_3d_fourier generate a filter bank of 3D cake wavelets.
+
+    Args:
+        size (int): size of output wavelet (will be size^3)
+        num_ori (int): num. of orientations in the filter bank
+        gamma_window (float): gamma parameter for the radial window, fixes the inflection point for the rolloff at gamma*nyquist_freq
+        nyquist_freq (float): nyquist frequency of the data
+        sigma_erf (float): controls steepness of the decay around the Nyquist frequency.
+        s_0 (float):
+        s_rho (float|None):
+        big_ell (int): order to compute the spherical harmonics up to.
+        centered (bool, optional): whether the wavelets are centered in Fourier space (as if fftshift'd). Defaults to False.
+
+    Returns:
+        Complex[Array, {num_ori} {size} {size} {size}]
+    """
+    angles = optimize_singleshell(num_ori, return_angles=True)
+    alpha = angles[:, 0]
+    gamma = angles[:, 1]
+    cake_fun = Partial(
+        cake_wavelet_3d_fourier,
+        size,
+        gamma_window,
+        nyquist_freq,
+        sigma_erf,
+        s_0,
+        s_rho,
+        big_ell=big_ell,
+        centered=centered,
+    )
+    return jnp.stack([cake_fun(a, 0, g) for a, g in zip(alpha, gamma)], axis=0)
+
+
 def _bspline_profile_2d(
     n: int, angle_grid: Float[Array, " a a"]
 ) -> Float[Array, " a a"]:
@@ -303,7 +348,7 @@ def _radial_window_2d(
     return window
 
 
-def _radial_window_3d(
+def _radial_window_fft_3d(
     size: int,
     gamma: float,
     nyquist_freq: float,
@@ -356,8 +401,8 @@ def _coeff_a_0l(ell: int, s0: float) -> float:
     See Eqn. 58 of [2].
 
     Args:
-        ell (int): _description_
-        s0 (float): _description_
+        ell (int): order of accompanying spherical harmonic
+        s0 (float): controls tradeoff between more uniform reconstruction at the cost of less directionality.
 
     Returns:
         float: the coefficient value
@@ -367,19 +412,20 @@ def _coeff_a_0l(ell: int, s0: float) -> float:
     )
 
 
-def _coeff_c_0l(ell: int) -> float:
+def _coeff_c_0l(ell: int, s0: float) -> float:
     """_coeff_c_0l coefficient for 3D cake wavelet.
 
     See Eqn. 63 of [2].
 
     Args:
-        ell (int): _description_
+        ell (int): order of accompanying spherical harmonic
+        s0 (float): controls tradeoff between more uniform reconstruction at the cost of less directionality.
 
     Returns:
         float: coefficient value
     """
     legendre_l0 = eval_legendre(ell, 0)
-    a_l0 = _coeff_a_0l(ell, 0.25 / 3)
+    a_l0 = _coeff_a_0l(ell, s0)
     return legendre_l0 * a_l0 + (1 - (jnp.pow(-1, ell)) / 2) * a_l0
 
 
@@ -388,6 +434,8 @@ def cake_wavelet_3d_fourier(
     gamma_window: float,
     nyquist_freq: float,
     sigma_erf: float,
+    s_0: float,
+    s_rho: float | None,
     alpha: float,
     beta: float,
     gamma: float,
@@ -401,6 +449,8 @@ def cake_wavelet_3d_fourier(
         gamma_window (float): gamma parameter for the radial window, fixes the inflection point for the rolloff at gamma*nyquist_freq
         nyquist_freq (float): nyquist frequency of the data (same units as size)
         sigma_erf (float): controls the steepness of the decay around the Nyquist frequency.
+        s_0 (float): controls tradeoff between more uniform reconstruction at the cost of less directionality.
+        s_rho (float): low frequency window variance.
         alpha (float): rotation around x-axis
         beta (float): rotation around y-axis
         gamma (float): rotation around z-axis
@@ -410,10 +460,11 @@ def cake_wavelet_3d_fourier(
     Returns:
         Complex[Array]: a single cake wavelet, in the Fourier domain.
     """
-    g_rho = _radial_window_3d(size, gamma_window, nyquist_freq, sigma_erf)
+    g_rho = _radial_window_fft_3d(size, gamma_window, nyquist_freq, sigma_erf)
     theta, phi = angular_coordinate_grids_3d(size, alpha, beta, gamma)
     c_0l = jnp.expand_dims(
-        jnp.asarray([_coeff_c_0l(ell) for ell in range(0, big_ell + 1)]), axis=0
+        jnp.asarray([_coeff_c_0l(ell, s_0) for ell in range(0, big_ell + 1)]),
+        axis=0,
     )
     sph_harm = Partial(
         jax.scipy.special.sph_harm_y,
@@ -424,11 +475,14 @@ def cake_wavelet_3d_fourier(
         c_0l * jax.vmap(sph_harm, (0, 0))(theta.flatten(), phi.flatten()),
         axis=-1,
     ).reshape(phi.shape)
+    wavelet = g_rho * sigma_c0l_times_y0l
+    if s_rho is not None:
+        _, wavelet = split_cake_wavelet_3d_fourier(wavelet, s_rho)
     if centered:
-        return g_rho * sigma_c0l_times_y0l
+        return wavelet
     else:
         return jnp.roll(
-            g_rho * sigma_c0l_times_y0l,
+            wavelet,
             (-size / 2, -size / 2, -size / 2),
             axis=(-3, -2, -1),
         )
