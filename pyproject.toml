@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "calcite"
 version = "0.1.0"
-description = "Scattering transform"
+description = "wavelets, scattering, and g-cnns in jax"
 authors = ["Matt Black <mb46@princeton.edu>"]
 license = "GPLv3"
 readme = "README.md"
@@ -23,6 +23,8 @@ numpy = "^2.2.2"
 equinox = "^0.11.11"
 optax = "^0.2.4"
 tqdm = "^4.67.1"
+diffrax = "^0.6.2"
+einops = "^0.8.1"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.3.4"
@@ -57,6 +59,10 @@ myst-nb = "^1.1.2"
 jupyterlab = "^4.3.3"
 ipympl = "^0.9.4"
 kymatio = "^0.3.0"
+
+
+[tool.poetry.group.extra.dependencies]
+nd2reader = "^3.3.1"
 
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]
