@@ -378,6 +378,7 @@ def _radial_window_fft_3d(
 def _low_frequency_gaussian_window(
     size: int,
     s_rho: float,
+    num_spatial_dim : int,
 ) -> Float[Array, "{size} {size} {size}"]:
     """_low_frequency_gaussian_window filter to pick out low frequencies for wavelet splitting.
 
@@ -388,7 +389,12 @@ def _low_frequency_gaussian_window(
     Returns:
         Float[Array]
     """
-    rho = radial_coordinate_grid_3d(size)
+    if num_spatial_dim == 3:
+        rho = radial_coordinate_grid_3d(size)
+    elif num_spatial_dim == 2:
+        rho = radial_coordinate_grid_2d(size)
+    else:
+        raise ValueError("invalid # of spatial dimensions, must be 2 or 3")
     vals = (1 / jnp.power(4 * jnp.pi * s_rho, 1.5)) * jnp.exp(
         -rho / (4 * s_rho)
     )
@@ -477,7 +483,7 @@ def cake_wavelet_3d_fourier(
     ).reshape(phi.shape)
     wavelet = g_rho * sigma_c0l_times_y0l
     if s_rho is not None:
-        _, wavelet = split_cake_wavelet_3d_fourier(wavelet, s_rho)
+        _, wavelet = split_cake_wavelet_fourier(wavelet, s_rho)
     if centered:
         return wavelet
     else:
@@ -488,9 +494,9 @@ def cake_wavelet_3d_fourier(
         )
 
 
-def split_cake_wavelet_3d_fourier(
-    wavelet: Complex[Array, "a a a"], s_rho: float
-) -> Tuple[Complex[Array, "a a a"], Complex[Array, "a a a"]]:
+def split_cake_wavelet_fourier(
+    wavelet: Complex[Array, "..."], s_rho: float
+) -> Tuple[Complex[Array, "..."], Complex[Array, "..."]]:
     """split_cake_wavelet_3d_fourier split the wavelet into high/low frequency components.
 
     See Sect. 2.1.1 of [2], this implements Eqns 18 with Gaussian window specified by Eqn. 19.
@@ -499,5 +505,6 @@ def split_cake_wavelet_3d_fourier(
         Tuple[Complex[Array],Complex[Array]]: (low, high) frequency parts of input wavelet.
     """
     size = wavelet.shape[0]
-    lf_win = _low_frequency_gaussian_window(size, s_rho)
+    num_spatial_dim = len(wavelet.shape)
+    lf_win = _low_frequency_gaussian_window(size, s_rho, num_spatial_dim)
     return lf_win * wavelet, (1 - lf_win) * wavelet

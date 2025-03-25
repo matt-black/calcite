@@ -31,6 +31,26 @@ def binomial_coefficient(
     )
 
 
+def ifft_centered(
+    centered_fft : Complex[Array, "..."]
+) -> Complex[Array, "..."]:
+    """ifft_centered inverse fft of a centered fft, using jnp.roll.
+
+    Raises:
+        ValueError: if input is not a 2D or 3D array
+
+    Returns:
+        Complex[Array]
+    """
+    n_dims = len(centered_fft.shape)
+    if n_dims == 2:
+        return ifft2_centered(centered_fft)
+    elif n_dims == 3:
+        return ifft3_centered(centered_fft)
+    else:
+        raise ValueError("invalid # of dimensions for input array")
+
+
 def ifft2_centered(
     centered_fft: Complex[Array, "a a"],
 ) -> Complex[Array, "a a"]:
