@@ -14,7 +14,6 @@ from jaxtyping import Array
 from jaxtyping import Complex
 from jaxtyping import Float
 from jaxtyping import Int
-from jaxtyping import Num
 from jaxtyping import Real
 
 
@@ -324,30 +323,3 @@ def eval_legendre(
             )
         )(n)
     return jnp.squeeze(p)
-
-
-def pad_for_dwt(x: Num[Array, " s"], size: int, mode: str) -> Array:
-    """pad_for_dwt pad the input vector for downstream application of discrete wavelet transform.
-
-    Args:
-        x (Num[Array, &quot; s&quot;]): the input vector to be padded
-        size (int): size of padding (will be applied to both sides)
-        mode (str): padding mode
-
-    Raises:
-        ValueError: if invalid padding mode specified
-
-    Returns:
-        Array: padded input
-    """
-    if mode == "periodic":
-        mode = "wrap"
-    if mode in ("symmetric", "reflect", "edge", "wrap"):
-        return jnp.pad(x, size, mode)
-    elif mode == "zero":
-        return jnp.pad(x, size, mode="constant", constant_values=0)
-    elif mode == "periodization":
-        y = jnp.pad(x, (0, x.shape[0] % 2), mode="edge")
-        return jnp.pad(y, size // 2, mode="wrap")
-    else:
-        raise ValueError("invalid padding mode")

@@ -1,3 +1,4 @@
+from numbers import Number
 from typing import List
 
 import jax.numpy as jnp
@@ -135,7 +136,7 @@ def gaussian_filter(
     Returns:
         Real[Array]
     """
-    if isinstance(sigma, float) and axis is None:
+    if isinstance(sigma, Number) and axis is None:
         sigma = [
             sigma,
         ] * input.ndim
