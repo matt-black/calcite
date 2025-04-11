@@ -1,4 +1,4 @@
-""" Real-space 2D Scattering Transform.
+"""Real-space 2D Scattering Transform.
 
 Scattering transform for 2 dimensions, all calculations are done in real domain.
 """

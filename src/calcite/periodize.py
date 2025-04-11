@@ -1,4 +1,4 @@
-""" Wavelet (FFT-domain) periodization.
+"""Wavelet (FFT-domain) periodization.
 
 Periodization is accomplished by atrous convolution with a kernel of ones. This makes the implementation GPU-friendly and fast.
 """

@@ -1,4 +1,4 @@
-""" Fourier-space 2D Scattering Transform.
+"""Fourier-space 2D Scattering Transform.
 
 Scattering transform for 2 dimensions, where all calculations are done in
 the Fourier domain.

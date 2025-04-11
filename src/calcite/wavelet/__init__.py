@@ -1,4 +1,4 @@
-""" Wavelets and Corresponding Kernels.
+"""Wavelets and Corresponding Kernels.
 
 Jax-based implementation of wavelets used in the scattering transform.
 

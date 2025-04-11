@@ -1,4 +1,4 @@
-""" Layers and utilities for building up wavelet scattering networks.
+"""Layers and utilities for building up wavelet scattering networks.
 
 Currently implemented:
     1) LearnedScatteringLayer: takes in an input, applies a wavelet filter bank to it, then a 1x1 convolution to trim output responses.

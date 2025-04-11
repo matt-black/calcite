@@ -1,4 +1,4 @@
-r""" Solid Harmonic Wavelets.
+r"""Solid Harmonic Wavelets.
 
 First introduced in [1]:
 "Solid harmonics are solutions of the Laplace equation, $\Delta{}f=0$."

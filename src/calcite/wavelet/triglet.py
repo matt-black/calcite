@@ -1,4 +1,4 @@
-""" Triglet wavelets.
+"""Triglet wavelets.
 
 Introduced in [1].
 

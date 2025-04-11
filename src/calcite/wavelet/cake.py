@@ -222,12 +222,14 @@ def orientation_bank_2d_fourier(
     bandpass = rad_damping - dc_window
     ang_grid = angular_coordinate_grid_2d(size)
     thetas = jnp.linspace(0, 2 * jnp.pi, n_orientations, False)
-    b_splines = [
-        _bspline_profile_2d(
-            spline_order, shift_remainder(ang_grid - theta) / s_phi
-        )
-        / overlap_factor
+    theta_diff = jnp.mean(jnp.diff(thetas))
+    ang_grids = [
+        shift_remainder(ang_grid - theta + 2 * theta_diff) / s_phi
         for theta in thetas
+    ]
+    b_splines = [
+        _bspline_profile_2d(spline_order, ang_grid) / overlap_factor
+        for ang_grid in ang_grids
     ]
     if centered:
         return jnp.stack(
@@ -378,7 +380,7 @@ def _radial_window_fft_3d(
 def _low_frequency_gaussian_window(
     size: int,
     s_rho: float,
-    num_spatial_dim : int,
+    num_spatial_dim: int,
 ) -> Float[Array, "{size} {size} {size}"]:
     """_low_frequency_gaussian_window filter to pick out low frequencies for wavelet splitting.
 

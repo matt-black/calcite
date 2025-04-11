@@ -1,4 +1,4 @@
-""" Morlet wavelets.
+"""Morlet wavelets.
 
 Morlet filters are Gabor filters with a pre-modulation offset. This offset
 subtracts a gaussian profile centered at the original -- cancelling out the

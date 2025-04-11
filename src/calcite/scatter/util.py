@@ -1,4 +1,4 @@
-""" Utility functions for scattering transforms.
+"""Utility functions for scattering transforms.
 
 These aren't useful for the transform, itself, but for dealing with outputs, misc. data handling, etc.
 """

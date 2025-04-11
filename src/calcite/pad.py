@@ -1,4 +1,4 @@
-""" Padding utilities.
+"""Padding utilities.
 
 To avoid artifacts in the convolution, inputs must be appropriately padded.
 """

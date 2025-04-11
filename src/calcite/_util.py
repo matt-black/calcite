@@ -10,11 +10,11 @@ import jax
 import jax.numpy as jnp
 import jax.scipy as jsp
 from jax.scipy.spatial.transform import Rotation
-from jax.tree_util import Partial
 from jaxtyping import Array
 from jaxtyping import Complex
 from jaxtyping import Float
 from jaxtyping import Int
+from jaxtyping import Num
 from jaxtyping import Real
 
 
@@ -31,9 +31,7 @@ def binomial_coefficient(
     )
 
 
-def ifft_centered(
-    centered_fft : Complex[Array, "..."]
-) -> Complex[Array, "..."]:
+def ifft_centered(centered_fft: Complex[Array, "..."]) -> Complex[Array, "..."]:
     """ifft_centered inverse fft of a centered fft, using jnp.roll.
 
     Raises:
@@ -84,6 +82,27 @@ def ifft3_centered(
     fft = jnp.roll(centered_fft, (-cent, -cent, -cent), (0, 1, 2))
     im = jnp.fft.ifftn(fft)
     return jnp.roll(im, (cent, cent, cent), (0, 1, 2))
+
+
+def uncenter_fft(
+    centered_fft: Complex[Array, "a a a"] | Complex[Array, "a a"],
+) -> Complex[Array, "a a a"] | Complex[Array, "a a"]:
+    """uncenter_fft take a center-shifted FFT and unshift it.
+
+    Args:
+        centered_fft (Complex[Array]): an FFT'd signal that has been centered
+
+    Returns:
+        Complex[Array]
+    """
+    cent = centered_fft.shape[0] // 2
+    n_dim = len(centered_fft.shape)
+    if n_dim == 3:
+        return jnp.roll(centered_fft, (-cent, -cent, -cent), (0, 1, 2))
+    elif n_dim == 2:
+        return jnp.roll(centered_fft, (-cent, -cent), (0, 1))
+    else:
+        raise ValueError("invalid # of dimensions, input array must be 2 or 3d")
 
 
 # polar coordinate grid generation
@@ -166,7 +185,7 @@ def shift_remainder(v: Array) -> Array:
     Returns:
         Float[Array]
     """
-    return jnp.remainder(v + jnp.pi, 2 * jnp.pi) - jnp.pi
+    return (v + 2 * jnp.pi) % (2 * jnp.pi)
 
 
 def polarize2d(
@@ -208,7 +227,11 @@ def polarize2d(
 
 
 def polarize_filter_bank_2d(
-    bank: Array, y_axis: bool = True, centered: bool = False
+    bank: Array,
+    positive: bool,
+    y_axis: bool = True,
+    centered: bool = False,
+    filter: bool = False,
 ) -> Array:
     """polarize_filter_bank_2d polarize all of the filters in the filter bank into positive and negative versions.
 
@@ -224,18 +247,7 @@ def polarize_filter_bank_2d(
     Returns:
         Array: input bank, but with single-sided filters. output will have extra dimension of size 2 in last "filter dimension" corresponding to positive & negative versions of filter. for example, if input was [N x M x size_h x size_w], output will be [N x M x 2 x size_h x size_w]
     """
-    inpt_shape = bank.shape
-    size_h, size_w = inpt_shape[-2], inpt_shape[-1]
-    polarize = Partial(polarize2d, y_axis=y_axis, centered=centered)
-    pos_fun = jax.vmap(Partial(polarize, positive=True), 0, 0)
-    neg_fun = jax.vmap(Partial(polarize, positive=False), 0, 0)
-    return jnp.stack(
-        [
-            pos_fun(bank.reshape(-1, size_h, size_w)).reshape(inpt_shape),
-            neg_fun(bank.reshape(-1, size_h, size_w)).reshape(inpt_shape),
-        ],
-        axis=-3,
-    )
+    raise NotImplementedError("todo")
 
 
 def legendre_recurrence(
@@ -312,3 +324,30 @@ def eval_legendre(
             )
         )(n)
     return jnp.squeeze(p)
+
+
+def pad_for_dwt(x: Num[Array, " s"], size: int, mode: str) -> Array:
+    """pad_for_dwt pad the input vector for downstream application of discrete wavelet transform.
+
+    Args:
+        x (Num[Array, &quot; s&quot;]): the input vector to be padded
+        size (int): size of padding (will be applied to both sides)
+        mode (str): padding mode
+
+    Raises:
+        ValueError: if invalid padding mode specified
+
+    Returns:
+        Array: padded input
+    """
+    if mode == "periodic":
+        mode = "wrap"
+    if mode in ("symmetric", "reflect", "edge", "wrap"):
+        return jnp.pad(x, size, mode)
+    elif mode == "zero":
+        return jnp.pad(x, size, mode="constant", constant_values=0)
+    elif mode == "periodization":
+        y = jnp.pad(x, (0, x.shape[0] % 2), mode="edge")
+        return jnp.pad(y, size // 2, mode="wrap")
+    else:
+        raise ValueError("invalid padding mode")
