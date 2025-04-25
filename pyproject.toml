@@ -1,67 +1,76 @@
-[tool.poetry]
+[project]
 name = "calcite"
 version = "0.1.0"
 description = "wavelets, scattering, and g-cnns in jax"
-authors = ["Matt Black <mb46@princeton.edu>"]
-license = "GPLv3"
+authors = [{ name = "Matt Black", email = "mb46@princeton.edu" }]
+requires-python = ">=3.11,<4.0"
 readme = "README.md"
-homepage = "https://github.com/matt-black/calcite"
-repository = "https://github.com/matt-black/calcite"
-documentation = "https://calcite.readthedocs.io"
-classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+license = "GPLv3"
+classifiers = ["Development Status :: 2 - Pre-Alpha"]
+dependencies = [
+    "jax>=0.5.0,<0.6",
+    "jaxtyping>=0.2.37,<0.3",
+    "numpy>=2.2.2,<3",
+    "equinox>=0.11.11,<0.12",
+    "optax>=0.2.4,<0.3",
+    "tqdm>=4.67.1,<5",
+    "diffrax>=0.6.2,<0.7",
+    "einops>=0.8.1,<0.9",
+    "zarr>=3.0.6,<4",
+    "scikit-learn>=1.6.1,<2",
 ]
 
-[tool.poetry.urls]
+[project.urls]
+Homepage = "https://github.com/matt-black/calcite"
+Repository = "https://github.com/matt-black/calcite"
+Documentation = "https://calcite.readthedocs.io"
 Changelog = "https://github.com/matt-black/calcite/releases"
 
-[tool.poetry.dependencies]
-python = ">=3.11,<4.0"
-jax = {extras = ["cuda12"], version = "^0.5.0"}
-jaxtyping = "^0.2.37"
-numpy = "^2.2.2"
-equinox = "^0.11.11"
-optax = "^0.2.4"
-tqdm = "^4.67.1"
-diffrax = "^0.6.2"
-einops = "^0.8.1"
-zarr = "^3.0.6"
-scikit-learn = "^1.6.1"
+[dependency-groups]
+test = ["pytest>=8.3.4,<9"]
+dev = [
+    "Pygments>=2.10.0",
+    "black>=21.10b0",
+    "coverage[toml]>=6.2",
+    "darglint>=1.8.1",
+    "flake8>=4.0.1",
+    "flake8-bandit>=2.1.2",
+    "flake8-bugbear>=21.9.2",
+    "flake8-docstrings>=1.6.0",
+    "flake8-rst-docstrings>=0.2.5",
+    "furo>=2021.11.12",
+    "isort>=5.10.1",
+    "mypy>=0.930",
+    "pep8-naming>=0.12.1",
+    "pre-commit>=2.16.0",
+    "pre-commit-hooks>=4.1.0",
+    "pytest>=6.2.5",
+    "pyupgrade>=2.29.1",
+    "typeguard>=2.13.3",
+    "xdoctest[colors]>=0.15.10",
+    "myst-parser>=0.16.1",
+    "ipykernel>=6.29.5,<7",
+    "poetry-plugin-export>=1.8.0,<2",
+    "myst-nb>=1.1.2,<2",
+    "jupyterlab>=4.3.3,<5",
+    "ipympl>=0.9.4,<0.10",
+    "kymatio>=0.3.0,<0.4",
+    "mkdocs>=1.6.1,<2",
+    "mkdocstrings-python>=1.16.10,<2",
+    "mkdocs-material>=9.6.12,<10",
+]
+extra = ["nd2reader>=3.3.1,<4"]
 
-[tool.poetry.group.test.dependencies]
-pytest = "^8.3.4"
+[tool.uv]
+default-groups = [
+    "test",
+    "dev",
+    "extra",
+]
 
-[tool.poetry.group.dev.dependencies]
-Pygments = ">=2.10.0"
-black = ">=21.10b0"
-coverage = {extras = ["toml"], version = ">=6.2"}
-darglint = ">=1.8.1"
-flake8 = ">=4.0.1"
-flake8-bandit = ">=2.1.2"
-flake8-bugbear = ">=21.9.2"
-flake8-docstrings = ">=1.6.0"
-flake8-rst-docstrings = ">=0.2.5"
-furo = ">=2021.11.12"
-isort = ">=5.10.1"
-mypy = ">=0.930"
-pep8-naming = ">=0.12.1"
-pre-commit = ">=2.16.0"
-pre-commit-hooks = ">=4.1.0"
-pytest = ">=6.2.5"
-pyupgrade = ">=2.29.1"
-typeguard = ">=2.13.3"
-xdoctest = {extras = ["colors"], version = ">=0.15.10"}
-myst-parser = {version = ">=0.16.1"}
-ipykernel = "^6.29.5"
-poetry-plugin-export = "^1.8.0"
-myst-nb = "^1.1.2"
-jupyterlab = "^4.3.3"
-ipympl = "^0.9.4"
-kymatio = "^0.3.0"
-
-
-[tool.poetry.group.extra.dependencies]
-nd2reader = "^3.3.1"
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]
@@ -87,7 +96,3 @@ pretty = true
 show_column_numbers = true
 show_error_codes = true
 show_error_context = true
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
