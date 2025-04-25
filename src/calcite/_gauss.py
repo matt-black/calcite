@@ -7,6 +7,7 @@ from jax._src.lax.lax import PrecisionLike
 from jaxtyping import Array
 from jaxtyping import Float
 from jaxtyping import Int
+from jaxtyping import Num
 from jaxtyping import Real
 
 
@@ -218,3 +219,55 @@ def gaussian_2d(
         -jnp.square(y - cent) / (2 * jnp.square(sigma_y))
     )
     return (gx + gy) / jnp.sum(gx + gy)
+
+
+def convolve_2d_gaussian(
+    x: Num[Array, "r c"],
+    sigma_x: float,
+    sigma_y: float,
+    n_stds: float = 4,
+) -> Num[Array, "r c"]:
+    """convolve_2d_gaussian convolve the input array with a gaussian.
+
+    Args:
+        x (Num[Array, "r c"]): the input array (2D)
+        sigma_x (float): standard deviation in the x-direction
+        sigma_y (float): standard deviation in the y-direction
+        n_stds (float): number of standard deviations-wide the filter will be.
+
+    Returns:
+        Num[Array, "r c"]: blurred input.
+    """
+    return gaussian_filter(
+        gaussian_filter_1d(x, sigma_x, axis=1, order=0, truncate=n_stds),
+        sigma_y,
+        0,
+        truncate=n_stds,
+    )
+
+
+def convolve(x: Array, *sigmas, **kwargs) -> Array:
+    """Convolve the input array with an ND Gaussian.
+
+    Args:
+        x (Array): array to be convolved
+        sigmas (float): per-axis standard deviation of kernel
+        kwargs: keyword arguments, passed to ``gaussian_filter_1d``
+
+    Returns:
+        Array
+    """
+    n_dim = len(x.shape)
+    if len(sigmas) == 1:
+        sigmas = [
+            sigmas,
+        ] * n_dim
+    else:
+        if not len(sigmas) == n_dim:
+            raise ValueError(
+                "invalid # of sigmas, must be 1 or 1 per-axis of input array"
+            )
+    out = x.copy()
+    for axis, sigma in enumerate(sigmas):
+        out = gaussian_filter_1d(out, sigma, axis, order=0, **kwargs)
+    return out

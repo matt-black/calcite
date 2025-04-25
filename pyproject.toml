@@ -16,7 +16,7 @@ classifiers = [
 Changelog = "https://github.com/matt-black/calcite/releases"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<4.0"
+python = ">=3.11,<4.0"
 jax = {extras = ["cuda12"], version = "^0.5.0"}
 jaxtyping = "^0.2.37"
 numpy = "^2.2.2"
@@ -25,6 +25,8 @@ optax = "^0.2.4"
 tqdm = "^4.67.1"
 diffrax = "^0.6.2"
 einops = "^0.8.1"
+zarr = "^3.0.6"
+scikit-learn = "^1.6.1"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.3.4"
@@ -47,9 +49,6 @@ pre-commit = ">=2.16.0"
 pre-commit-hooks = ">=4.1.0"
 pytest = ">=6.2.5"
 pyupgrade = ">=2.29.1"
-sphinx = ">=4.3.2"
-sphinx-autobuild = ">=2021.3.14"
-sphinx-click = ">=3.0.2"
 typeguard = ">=2.13.3"
 xdoctest = {extras = ["colors"], version = ">=0.15.10"}
 myst-parser = {version = ">=0.16.1"}

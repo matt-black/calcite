@@ -1,6 +1,0 @@
-furo
-sphinx
-myst_parser
-myst_nb
-sphinx-copybutton
-sphinx-design
