@@ -17,10 +17,18 @@ from .._util import angular_coordinate_grid_2d
 from .._util import radial_coordinate_grid_2d
 
 
+__all__ = [
+    "filter_bank_2d",
+    "filter_bank_2d_fixed_scale",
+    "triglet_2d",
+    "psihat_jl",
+]
+
+
 def filter_bank_2d(
     size: int, j_im: int, ell: int, w: int = 2, t: int = 1
 ) -> Float[Array, " {j_im-2} {ell} {size} {size}"]:
-    """filter_bank triglet filter bank.
+    """Triglet filter bank.
 
     Args:
         size (int): size of filter in single dimension (output will be size x size)
@@ -44,7 +52,7 @@ def filter_bank_2d(
 def filter_bank_2d_fixed_scale(
     size: int, j_im: int, ell: int, j: int, w: int = 2, t: int = 1
 ) -> Float[Array, " {ell} {size} {size}"]:
-    """filter_bank_2d_fixed_scale triglet filter bank at fixed scale, `j`.
+    """Triglet filter bank at fixed scale, `j`.
 
     Args:
         size (int): size of filter in single dimension (output will be size x size)
@@ -66,7 +74,7 @@ def filter_bank_2d_fixed_scale(
 def triglet_2d(
     size: int, j: int, a_bin: int, j_im: int, ell: int, w: int = 2, t: int = 1
 ) -> Float[Array, " {size} {size}"]:
-    """triglet_2d 2D triglet filter.
+    """2D triglet filter.
 
     Args:
         size (int): size of filter in single dimension (output will be size x size)
@@ -96,7 +104,7 @@ def psihat_jl(
     w: int = 2,
     t: int = 1,
 ) -> float:
-    r"""psihat_jl value of triglet at (r, \theta).
+    r"""Value of triglet at (r, \theta).
 
     Args:
         r (float): Fourier-space radial coordinate

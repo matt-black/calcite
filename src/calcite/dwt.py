@@ -23,17 +23,30 @@ from .wavelet._class import DiscreteWavelet
 from .wavelet.discrete import build_wavelet
 
 
+__all__ = [
+    "wavedec",
+    "waverec",
+    "dwt",
+    "dwt_1d",
+    "idwt_1d",
+    "dwt_2d",
+    "idwt_2d",
+    "dwt_3d",
+    "idwt_3d",
+]
+
+
 def wavedec(
     x: Num[Array, "..."],
     wavelets: str | DiscreteWavelet | Sequence[Union[str, DiscreteWavelet]],
     pad_mode: str = "symmetric",
     level: Optional[int] = None,
 ) -> Tuple[Array, List[List[Array]]]:
-    """wavedec compute the multilevel discrete wavelet transform (DWT). # noqa: D403 .
+    """Compute the multilevel discrete wavelet transform (DWT).
 
     Args:
         x (Array): input array to compute DWT of
-        wavelet (str | DiscreteWavelet | Sequence[str|DiscreteWavelet]): wavelet used to compute DWT. can be a sequence, in which case the specified wavelet is used per-axis.
+        wavelets (str | DiscreteWavelet | Sequence[str|DiscreteWavelet]): wavelet(s) used to compute DWT. can be a sequence, in which case the specified wavelet is used per-axis.
         pad_mode (str, optional): padding mode used during computation. Defaults to "symmetric".
         level (Optional[int], optional): number of decomposition levels to compute. Defaults to None, in which case level will be automatically computed.
 
@@ -75,7 +88,7 @@ def waverec(
     wavelets: str | DiscreteWavelet | Sequence[Union[str, DiscreteWavelet]],
     pad_mode: str = "symmetric",
 ) -> Array:
-    """waverec compute the multilevel inverse discrete wavelet transform. # noqa: D403 .
+    """Compute the multilevel inverse discrete wavelet transform.
 
     Args:
         approx (Array): approximation coefficients
@@ -157,7 +170,7 @@ def dwt(
     ],
     pad_mode: str,
 ) -> Tuple[Array, ...]:
-    """dwt compute the (single level) discrete wavelet transform for the input array. # noqa: D403 .
+    """Compute the (single level) discrete wavelet transform for the input array.
 
     Args:
         x (Array): input array
@@ -210,7 +223,7 @@ def dwt_1d(
     dec_hi: Float[Array, " t"],
     pad_mode: str,
 ) -> Tuple[Array, Array]:
-    """dwt_1d do 1-dimensional discrete wavelet transform on input array, `x`.
+    """Do 1-dimensional discrete wavelet transform on input array, `x`.
 
     Args:
         x (Array): input array, should be 1d.
@@ -252,8 +265,8 @@ def idwt_1d(
     rec_lo: Float[Array, " t"],
     rec_hi: Float[Array, " t"],
     pad_mode: str,
-):  # -> Num[Array, " s"]:
-    """idwt_1d inverse discrete wavelet transform in one-dimension.
+) -> Num[Array, " s"]:
+    """Inverse discrete wavelet transform in one-dimension.
 
     Args:
         c_a (Array): approximation coefficient array
@@ -293,7 +306,7 @@ def dwt_2d(
     dec_hi_row: Optional[Float[Array, " s"]],
     pad_mode: str,
 ) -> Tuple[Array, Array, Array, Array]:
-    """dwt_2d do 2-dimensional discrete wavelet transform on input array, `x`.
+    """Do 2-dimensional discrete wavelet transform on input array, `x`.
 
     Args:
         x (Array): input array, should be 1d.
@@ -343,7 +356,7 @@ def idwt_2d(
     rec_hi_row: Optional[Float[Array, " t"]],
     pad_mode: str,
 ) -> Num[Array, "y x"]:
-    """idwt_2d inverse discrete wavelet transform in 2-dimensions.
+    """Inverse discrete wavelet transform in 2-dimensions.
 
     Args:
         c_aa (Array): approximation coefficient
@@ -385,7 +398,7 @@ def idwt_3d(
     rec_hi_z: Optional[Float[Array, " t"]],
     pad_mode: str,
 ) -> Num[Array, "w y x"]:
-    """idwt_3d inverse discrete wavelet transform in 3 dimensions.
+    """Inverse discrete wavelet transform in 3 dimensions.
 
     Args:
         c_aaa (Array): approximation coefficient array, c_aaa
@@ -436,7 +449,7 @@ def dwt_3d(
     dec_hi_z: Optional[Float[Array, " s"]],
     pad_mode: str,
 ) -> Tuple[Array, Array, Array, Array, Array, Array, Array, Array]:
-    """dwt_3d do 3-dimensional discrete wavelet transform on input array, `x`.
+    """Do 3-dimensional discrete wavelet transform on input array, `x`.
 
     Args:
         x (Array): input array, should be 1d.

@@ -13,8 +13,11 @@ from ._class import DiscreteWavelet
 from ._class import WaveletSymmetry
 
 
+__all__ = ["build_wavelet", "filter_bank", "quadrature_mirror_filter"]
+
+
 def build_wavelet(name: str) -> DiscreteWavelet:
-    """build_wavelet create a DiscreteWavelet object from the wavelet name.
+    """Create a DiscreteWavelet object from the wavelet name.
 
     Args:
         name (str): name of the wavelet to construct
@@ -131,7 +134,7 @@ def build_wavelet(name: str) -> DiscreteWavelet:
 def filter_bank(
     rec_lo: Float[Array, " s"],
 ) -> Tuple[Array, Array, Array, Array]:
-    """filter_bank construct a filter bank from the low-pass reconstruction filter.
+    """Construct a filter bank from the low-pass reconstruction filter.
 
     Args:
         rec_lo (Float[Array, 's']): low-pass reconstruction filter, of size "s"
@@ -145,7 +148,7 @@ def filter_bank(
 
 
 def quadrature_mirror_filter(x: Float[Array, " s"]) -> Float[Array, " s"]:
-    """quadrature_mirror_filter create quadrature mirror filter for input filter.
+    """Create quadrature mirror filter for input filter.
 
     Args:
         x (Float[Array, 's']): input filter sequence (1d)

@@ -12,13 +12,16 @@ from jaxtyping import Array
 from jaxtyping import Num
 
 
+__all__ = ["periodize_filter"]
+
+
 def periodize_filter(
     num_spatial_dims: int,
     x: Array,
     adicity: int,
     j: int,
 ) -> Array:
-    """periodize_filter periodize the input fourier-domain input filter.
+    """Periodize the input fourier-domain input filter.
 
     Args:
         num_spatial_dims (int): number of spatial dimensions in input.

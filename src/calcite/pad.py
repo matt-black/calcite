@@ -11,10 +11,18 @@ from jaxtyping import Array
 from jaxtyping import Num
 
 
+__all__ = [
+    "center_pad_2d",
+    "uncenter_pad",
+    "padded_shape",
+    "pad_for_dwt",
+]
+
+
 def center_pad_2d(
     x: Num[Array, "..."], adicity: int, scale: int
 ) -> Num[Array, "..."]:
-    """center_pad_2d Center-pad the input array to prevent convolution artifacts.
+    """Center-pad the input array to prevent convolution artifacts.
 
     Args:
         x (Num[Array]): input array, must be at least 2D
@@ -38,7 +46,7 @@ def center_pad_2d(
 def uncenter_pad(
     y: Num[Array, "..."], shape: Iterable[int] | int
 ) -> Num[Array, "..."]:
-    """uncenter_pad Remove center padding of input array.
+    """Remove center padding of input array.
 
     Args:
         y (Num[Array]): input array to have padding removed
@@ -61,7 +69,7 @@ def uncenter_pad(
 def padded_shape(
     shape: Iterable[int], adicity: int, scale: int
 ) -> int | List[int]:
-    """padded_shape Compute the shape of the padded array.
+    """Compute the shape of the padded array.
 
     Args:
         shape (Iterable[int]): shape of input array in dimensions to pad
@@ -78,7 +86,7 @@ def padded_shape(
 
 
 def _padded_size(size: int, adicity: int, scale: int) -> int:
-    """_padded_size Compute how much to pad a dimension to avoid border effects/artifacts.
+    """Compute how much to pad a dimension to avoid border effects/artifacts.
 
     Args:
         size (int): input size of dimension
@@ -92,7 +100,7 @@ def _padded_size(size: int, adicity: int, scale: int) -> int:
 
 
 def pad_for_dwt(x: Num[Array, " s"], size: int, mode: str) -> Array:
-    """pad_for_dwt pad the input vector for downstream application of discrete wavelet transform.
+    """Pad the input vector for downstream application of discrete wavelet transform.
 
     Args:
         x (Num[Array, &quot; s&quot;]): the input vector to be padded

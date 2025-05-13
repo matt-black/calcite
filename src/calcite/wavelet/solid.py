@@ -24,10 +24,19 @@ from .._util import angular_coordinate_grid_2d
 from .._util import radial_coordinate_grid_2d
 
 
+__all__ = [
+    "solid_harmonic_2d",
+    "phi_ell",
+    "phi_hat_ell",
+    "phi_ell_m",
+    "phi_hat_ell_m",
+]
+
+
 def solid_harmonic_2d(
     size: int, space: str, ell: int
 ) -> Float[Array, " {size} {size}"]:
-    """solid_harmonic_2d 2d solid harmonic wavelet filter.
+    """2d solid harmonic wavelet filter.
 
     Args:
         size (int): size of one dimension of (square) filter
@@ -51,7 +60,7 @@ def solid_harmonic_2d(
 
 
 def phi_ell(ell: int, r: float, psi: float) -> float:
-    """phi_ell 2D solid harmonic wavelet value.
+    """2D solid harmonic wavelet value.
 
     Args:
         ell (float): polynomial order
@@ -70,7 +79,7 @@ def phi_ell(ell: int, r: float, psi: float) -> float:
 
 
 def phi_hat_ell(ell: int, _lambda: float, alpha: float) -> float:
-    """phi_hat_ell fourier space 2D solid harmonic wavelet value.
+    """Fourier space 2D solid harmonic wavelet value.
 
     Args:
         ell (float): polynomial order
@@ -89,7 +98,7 @@ def phi_hat_ell(ell: int, _lambda: float, alpha: float) -> float:
 
 
 def phi_ell_m(ell: int, m: int, r: float, theta: float, psi: float) -> float:
-    """phi_ell_m real space 3D solid harmonic wavelet value.
+    """Real space 3D solid harmonic wavelet value.
 
     Args:
         ell (int): degree of spherical harmonic
@@ -112,7 +121,7 @@ def phi_ell_m(ell: int, m: int, r: float, theta: float, psi: float) -> float:
 def phi_hat_ell_m(
     ell: int, m: int, _lambda: float, alpha: float, beta: float
 ) -> float:
-    """phi_hat_ell_m fourier space 3D solid harmonic wavelet value.
+    """Fourier space 3D solid harmonic wavelet value.
 
     Args:
         ell (int): degree of spherical harmonic

@@ -17,10 +17,8 @@ from jaxtyping import Int
 from jaxtyping import Real
 
 
-def binomial_coefficient(
-    x: Real[Array, "..."] | Real, y: Real[Array, "..."] | Real
-) -> Float[Array, "..."]:
-    """binomial_coefficient binomial coefficient as a function of 2 variables.
+def binomial_coefficient(x: Array | Real, y: Array | Real) -> Array:
+    """Binomial coefficient as a function of 2 variables.
 
     Returns:
         Real[Array,"..."]|Real: value of binomial coefficient
@@ -31,7 +29,7 @@ def binomial_coefficient(
 
 
 def ifft_centered(centered_fft: Complex[Array, "..."]) -> Complex[Array, "..."]:
-    """ifft_centered inverse fft of a centered fft, using jnp.roll.
+    """Inverse fft of a centered fft, using jnp.roll.
 
     Raises:
         ValueError: if input is not a 2D or 3D array
@@ -51,7 +49,7 @@ def ifft_centered(centered_fft: Complex[Array, "..."]) -> Complex[Array, "..."]:
 def ifft2_centered(
     centered_fft: Complex[Array, "a a"],
 ) -> Complex[Array, "a a"]:
-    """ifft2_centered inverse fft of a centered fft.
+    """Inverse fft of a centered fft.
 
     Args:
         centered_fft (Complex[Array]): fourier-domain image which has been shifted so that 0 frequency is in the middle.
@@ -69,7 +67,7 @@ def ifft2_centered(
 def ifft3_centered(
     centered_fft: Complex[Array, "a a a"],
 ) -> Complex[Array, "a a a"]:
-    """ifft3_centered Take the 3D inverse FFT of a centered FFT by rolling.
+    """Take the 3D inverse FFT of a centered FFT by rolling.
 
     Args:
         centered_fft (Complex[Array]): a 3D FFT'd signal, that has been centered.
@@ -86,7 +84,7 @@ def ifft3_centered(
 def uncenter_fft(
     centered_fft: Complex[Array, "a a a"] | Complex[Array, "a a"],
 ) -> Complex[Array, "a a a"] | Complex[Array, "a a"]:
-    """uncenter_fft take a center-shifted FFT and unshift it.
+    """Take a center-shifted FFT and unshift it.
 
     Args:
         centered_fft (Complex[Array]): an FFT'd signal that has been centered
@@ -106,7 +104,7 @@ def uncenter_fft(
 
 # polar coordinate grid generation
 def radial_coordinate_grid_2d(size: int) -> Float[Array, "{size} {size}"]:
-    """radial_coordinate_grid_2d 2d grid of radial coordinates for x,y.
+    """2d grid of radial coordinates for x,y.
 
     r = sqrt(x^2 + y^2)
 
@@ -122,7 +120,7 @@ def radial_coordinate_grid_2d(size: int) -> Float[Array, "{size} {size}"]:
 
 
 def radial_coordinate_grid_3d(size: int) -> Float[Array, "{size} {size}"]:
-    """radial_coordinate_grid_3d 3d grid of radial coordinates for x, y, z.
+    """3d grid of radial coordinates for x, y, z.
 
     Returns:
         Float[Array]: 3d grid of radial coordinate values
@@ -137,7 +135,7 @@ def radial_coordinate_grid_3d(size: int) -> Float[Array, "{size} {size}"]:
 
 
 def angular_coordinate_grid_2d(size: int) -> Float[Array, "{size} {size}"]:
-    """angular_coordinate_grid_2d 2d grid of angles for each x,y in grid.
+    """2d grid of angles for each x,y in grid.
 
     a = atan2(y/x) where y and x are based on the grid center being (0,0)
 
@@ -155,7 +153,7 @@ def angular_coordinate_grid_2d(size: int) -> Float[Array, "{size} {size}"]:
 def angular_coordinate_grids_3d(
     size: int, alpha: float = 0, beta: float = 0.0, gamma: float = 0.0
 ) -> Tuple[Float[Array, "{size} {size}"], Float[Array, "{size} {size}"]]:
-    """angular_coordinate_grids_3d grids for (theta, phi) angle at each point in grid.
+    """Grids for (theta, phi) angle at each point in grid.
 
     theta is the angle between the x and y axes (`tan^(-1)(y/x)`)
     phi is the angle relative to the z-axis
@@ -176,7 +174,7 @@ def angular_coordinate_grids_3d(
 
 
 def shift_remainder(v: Array) -> Array:
-    """shift_remainder shift negative angles to equiv. positive values in interval [0, 2*pi].
+    """Shift negative angles to equiv. positive values in interval [0, 2*pi].
 
     Args:
         v (Float[Array]): input values (angles)
@@ -190,10 +188,10 @@ def shift_remainder(v: Array) -> Array:
 def polarize2d(
     wvlet: Array, positive: bool, y_axis: bool = True, centered: bool = False
 ) -> Array:
-    """polarize2d make input, double-sided fourier domain wavelet into single-sided version.
+    """Make input, double-sided fourier domain wavelet into single-sided version.
 
     Args:
-        x (Array): input wavelet, should be fourier domain
+        wvlet (Array): input wavelet, should be fourier domain
         positive (bool): whether to take the positive or negative side (positive if True, negative if False)
         y_axis (bool, optional): split along y-axis. Defaults to True.
         centered (bool, optional): whether or not input wavelet is centered in fourier domain. Defaults to False.
@@ -232,7 +230,7 @@ def polarize_filter_bank_2d(
     centered: bool = False,
     filter: bool = False,
 ) -> Array:
-    """polarize_filter_bank_2d polarize all of the filters in the filter bank into positive and negative versions.
+    """Polarize all of the filters in the filter bank into positive and negative versions.
 
     Polarization as is done here is described in [1].
 
@@ -252,7 +250,7 @@ def polarize_filter_bank_2d(
 def legendre_recurrence(
     n: Int[Array, " n"], x: Float[Array, " m"], n_max: Int[Array, ""]
 ) -> Float[Array, "n m"]:
-    """legendre_recurrence Compute the Legendre polynomials up to degree n_max at a given point or array of points x.
+    """Compute the Legendre polynomials up to degree n_max at a given point or array of points x.
 
     The first two Legendre polynomials are initialized as P_0(x) = 1 and P_1(x) = x. The subsequent polynomials are computed using the recurrence relation: P_{n+1}(x) = ((2n + 1) * x * P_n(x) - n * P_{n-1}(x)) / (n + 1).
 
@@ -289,7 +287,7 @@ def legendre_recurrence(
 def eval_legendre(
     n: Int[Array, " n"], x: Float[Array, " m"]
 ) -> Float[Array, "n m"]:
-    """eval_legendre Evaluate Legendre polynomials of specified degrees at provided point(s).
+    """Evaluate Legendre polynomials of specified degrees at provided point(s).
 
     Parameters:
         n (Array): An array of integer degrees for which the Legendre polynomials are to be evaluated. Each element must be a non-negative integer and the array can be of any shape.

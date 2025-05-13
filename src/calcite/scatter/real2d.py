@@ -19,13 +19,22 @@ from jaxtyping import Num
 from jaxtyping import Real
 
 
+__all__ = [
+    "apply_filter_bank",
+    "complex_modulus",
+    "batched_conv2d",
+    "scattering_coeffs",
+    "scattering_fields",
+]
+
+
 def apply_filter_bank(
     x: Num[Array, "c h w"],
     psi: Complex[Array, "l p kh kw"],
     mode: str = "same",
     method: str = "fft",
 ) -> Complex[Array, "c l p h w"]:
-    """apply_filter_bank Apply a bank of filters to all channels & batches in input.
+    """Apply a bank of filters to all channels & batches in input.
 
     Args:
         x (Num[Array]): input array (4D)
@@ -46,7 +55,7 @@ def apply_filter_bank(
 
 
 def complex_modulus(x: Complex[Array, "..."]) -> Real[Array, "..."]:
-    """complex_modulus Compute complex modulus of input.
+    """Compute complex modulus of input.
 
     Args:
         x (Complex[Array]): input array
@@ -63,7 +72,7 @@ def batched_conv2d(
     mode: str = "same",
     method: str = "fft",
 ) -> Num[Array, "..."]:
-    """batched_conv2d 2D convolution of inputs, batched.
+    """2D convolution of inputs, batched.
 
     Args:
         in1 (Num[Array]): batched images to be convolved on (4+D)
@@ -102,7 +111,7 @@ def scattering_coeffs(
     conv_method: str = "fft",
     nonlinearity: Callable[[Array], Array] = complex_modulus,
 ) -> Tuple[Array, Array, List[Array]]:
-    """scattering_coeffs Compute scattering coefficients for input.
+    """Compute scattering coefficients for input.
 
     Args:
         x (Real[Array]): input image(s) tensor
@@ -184,7 +193,7 @@ def scattering_fields(
 ) -> Tuple[
     List[Num[Array, "b c l 1 h w"]], List[List[Num[Array, "b c l m h w"]]]
 ]:
-    """scattering_fields Compute scattering fields.
+    """Compute scattering fields.
 
     Args:
         x (Real[Array]): input array, should be 4D
@@ -253,7 +262,7 @@ def learned_scattering_fields(
     List[Complex[Array, "b c l 1 h w"]],
     List[List[Complex[Array, "b c l m h w"]]],
 ]:
-    """learned_scattering_fields TODO.
+    """TODO.
 
     DONT USE
     """

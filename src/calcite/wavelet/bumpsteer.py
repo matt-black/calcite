@@ -19,6 +19,13 @@ from jaxtyping import Num
 from ..periodize import periodize_filter
 
 
+__all__ = [
+    "filter_bank_2d",
+    "bump_steerable_kernel_2d_real",
+    "bump_steerable_kernel_2d_fourier",
+]
+
+
 def filter_bank_2d(
     size_h: int,
     size_w: int,
@@ -33,7 +40,7 @@ def filter_bank_2d(
 ) -> Num[
     Array, "{n_scales} {n_orientations} {n_alphas} {delta_n} {size_h} {size_w}"
 ]:
-    """filter_bank_2d create a filter bank of 2D bump-steerable kernels.
+    """Create a filter bank of 2D bump-steerable kernels.
 
     Args:
         size_h (int): size of output filters, in rows
@@ -117,7 +124,7 @@ def bump_steerable_kernel_2d_real(
     alpha: float,
     ell: int,
 ) -> Num[Array, "{size_h} {size_w}"]:
-    """bump_steerable_kernel_2d_real Real-space kernel for 2D bump steerable wavelet.
+    """Real-space kernel for 2D bump steerable wavelet.
 
     Args:
         size_h (int): spatial size of filter, height, in pixels
@@ -149,7 +156,7 @@ def bump_steerable_kernel_2d_fourier(
     alpha: float,
     ell: int,
 ) -> Num[Array, "{size_h} {size_w}"]:
-    """bump_steerable_kernel_2d_fourier Fourier-space kernel for 2D bump steerable wavelet.
+    """Fourier-space kernel for 2D bump steerable wavelet.
 
     Args:
         size_h (int): spatial size of filter, height, in pixels

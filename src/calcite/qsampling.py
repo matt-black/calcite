@@ -15,6 +15,9 @@ import numpy
 from scipy.optimize import fmin_slsqp
 
 
+__all__ = ["optimize_multishell", "optimize_singleshell"]
+
+
 _epsilon = 1e-9
 
 
@@ -175,7 +178,7 @@ def optimize_multishell(
     antipodal: bool = True,
     init_points: numpy.ndarray | None = None,
 ) -> numpy.ndarray:
-    """optimize_multishell do the optimization to find optimal sampling.
+    """Do the optimization to find optimal sampling for a multishell configuration in three dimensions.
 
     Args:
         num_shells (int): # of shells
@@ -217,7 +220,7 @@ def optimize_singleshell(
     init_points: numpy.ndarray | None = None,
     return_angles: bool = False,
 ) -> numpy.ndarray:
-    """optimize_singleshell find optimal sampling for a single shell.
+    """Find optimal sampling for a single three-dimensional shell.
 
     Args:
         num_pts (int): number of points.

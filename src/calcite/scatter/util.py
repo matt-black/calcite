@@ -11,6 +11,14 @@ from jaxtyping import Array
 from ..periodize import periodize_filter
 
 
+__all__ = [
+    "apply_filter_bank",
+    "subsample_field",
+    "flatten_filter_tensor",
+    "group_fields_by_size",
+]
+
+
 def apply_filter_bank(
     num_spatial_dims: int,
     x: Array,  # [channels x (spatial dimensions)]
@@ -19,7 +27,7 @@ def apply_filter_bank(
     scale_subsample: int,
     scale_periodize: int | None = None,
 ) -> Array:
-    """apply_filter_bank apply a bank of filters to all of the channels in the input.
+    """Apply a bank of filters to all of the channels in the input.
 
     Args:
         num_spatial_dims (int): number of spatial dimensions in the input array
@@ -57,7 +65,7 @@ def subsample_field(
     adicity: int,
     j: int,
 ) -> Array:
-    """subsample_field subsample an input field by local averaging.
+    """Subsample an input field by local averaging.
 
     Args:
         num_spatial_dims (int): number of spatial dimensions in input.
@@ -90,7 +98,7 @@ def flatten_filter_tensor(
     num_spatial_dims: int,
     psi: Array,
 ) -> Array:
-    """flatten_filter_tensor flatten filter parameter channels (along with possible image channels) into a single array axis.
+    """Flatten filter parameter channels (along with possible image channels) into a single array axis.
 
     Args:
         num_spatial_dims (int): number of spatial dimensions in filter
@@ -109,7 +117,7 @@ def group_fields_by_size(
     field1: List[Array],
     field2: List[List[Array]],
 ) -> List[Array]:
-    """group_fields_by_size Group scattering fields from different layers by size.
+    """Group scattering fields from different layers by size.
 
     Args:
         field1 (List[Array]): Scattering fields from 1st layer of transform.

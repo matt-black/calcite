@@ -61,7 +61,7 @@ class PartialConv(eqx.nn.Conv):
         fft_conv: bool = False,
         fft_apply_channelwise: bool = False,
         *,
-        key: PRNGKeyArray
+        key: PRNGKeyArray,
     ):
         """__init__ initialize the layer.
 
@@ -303,7 +303,7 @@ class PartialConvBlock(eqx.Module):
         fft_apply_channelwise: bool = False,
         activation: str = "leaky_relu",
         *,
-        key: PRNGKeyArray
+        key: PRNGKeyArray,
     ):
         """__init__ initialize the block of convolutions.
 

@@ -152,7 +152,7 @@ class ConvBlock(eqx.Module):
         activation: str = "leaky_relu",
         dropout_prob: float = 0.0,
         *,
-        key: PRNGKeyArray
+        key: PRNGKeyArray,
     ):
         """__init__ initialize the block of convolutions.
 
@@ -258,7 +258,7 @@ class UpBlock(eqx.Module):
         activation: str = "leaky_relu",
         dropout_prob: float = 0.3,
         *,
-        key: PRNGKeyArray
+        key: PRNGKeyArray,
     ):
         """__init__ initialize the decoder block.
 
@@ -392,7 +392,7 @@ class PartialUNet(eqx.Module):
         output_activation: str = "sigmoid",
         dropout_prob: float = 0.0,
         *,
-        key: PRNGKeyArray
+        key: PRNGKeyArray,
     ):
         """__init__ initialize the network.
 
@@ -714,7 +714,7 @@ def test(
     n_samples: int = 50,
     batched: bool = False,
     *,
-    key: PRNGKeyArray
+    key: PRNGKeyArray,
 ) -> Array:
     """Generate model prediction by sampling and averaging many masked instances (see Self2Self paper for description).
 

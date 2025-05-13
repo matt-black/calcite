@@ -31,6 +31,17 @@ from .._util import shift_remainder
 from ..qsampling import optimize_singleshell
 
 
+__all__ = [
+    "filter_bank_2d",
+    "orientation_bank_2d",
+    "orientation_bank_2d_real",
+    "orientation_bank_2d_fourier",
+    "orientation_bank_3d_fourier",
+    "cake_wavelet_3d_fourier",
+    "split_cake_wavelet_fourier",
+]
+
+
 def filter_bank_2d(
     size: int,
     n_scales: int,
@@ -44,7 +55,7 @@ def filter_bank_2d(
     poly_order_lf: float | None,
     centered: bool = False,
 ) -> Num[Array, "{n_scales} {n_orientations} {size} {size}"]:
-    """filter_bank_2d create a filter bank of 2D cake kernels.
+    """Create a filter bank of 2D cake kernels.
 
     Args:
 
@@ -101,7 +112,7 @@ def orientation_bank_2d(
     poly_order_lf: float | None,
     centered: bool = False,
 ) -> Num[Array, " {n_orientations} {size} {size}"]:
-    """orientation_bank_2d create a filter bank of 2D cake kernels.
+    """Create a filter bank of 2D cake kernels.
 
     Args:
         n_orientations (int): number of orientations to include in the bank
@@ -149,7 +160,7 @@ def orientation_bank_2d_real(
     inflection_point_lf: float | None,
     poly_order_lf: float | None,
 ) -> Complex[Array, " {n_orientations} {size} {size}"]:
-    """orientation_bank_2d_real create a filter bank of real-space 2D cake kernels.
+    """Create a filter bank of real-space 2D cake kernels.
 
     Args:
         n_orientations (int): number of orientations to include in the bank
@@ -195,7 +206,7 @@ def orientation_bank_2d_fourier(
     poly_order_lf: int | None,
     centered: bool = False,
 ) -> Real[Array, " {n_orientations} {size} {size}"]:
-    """orientation_bank_2d_fourier create a filter bank of fourier-space 2D cake kernels.
+    """Create a filter bank of fourier-space 2D cake kernels.
 
     Args:
         n_orientations (int): number of orientations to include in the bank
@@ -253,8 +264,8 @@ def orientation_bank_3d_fourier(
     s_rho: float | None,
     big_ell: int,
     centered: bool = False,
-):  # -> Complex[Array, "{num_ori} {size} {size} {size}"]:
-    """orientation_bank_3d_fourier generate a filter bank of 3D cake wavelets.
+) -> Complex[Array, "{num_ori} {size} {size} {size}"]:
+    """Generate a filter bank of 3D cake wavelets.
 
     Args:
         size (int): size of output wavelet (will be size^3)
@@ -290,7 +301,7 @@ def orientation_bank_3d_fourier(
 def _bspline_profile_2d(
     n: int, angle_grid: Float[Array, " a a"]
 ) -> Float[Array, " a a"]:
-    """_bspline_profile compute b-spline of order k=n+2.
+    """Compute b-spline of order k=n+2.
 
     Args:
         n (int): spline order
@@ -325,7 +336,7 @@ def _bspline_profile_2d(
 def _radial_window_2d(
     size: int, n: int, inflection_point: float
 ) -> Float[Array, " {size size}"]:
-    """_radial_window windowing function for radial dimension (frequency).
+    """Windowing function for radial dimension (frequency).
 
     Windowing function, M_N, is essentially a Gaussian multiplied with the
     Taylor series of its inverse up to a finite order 2N.
@@ -356,7 +367,7 @@ def _radial_window_fft_3d(
     nyquist_freq: float,
     sigma_erf: float | None = None,
 ):  # -> Float[Array, " {size} {size} {size}"]:
-    """_radial_window_3d windowing function for radial dimension (frequency) in three dimensions.
+    """Windowing function for radial dimension (frequency) in three dimensions.
 
     See Eqn. 50, Fig. 5 of [2].
 
@@ -382,7 +393,7 @@ def _low_frequency_gaussian_window(
     s_rho: float,
     num_spatial_dim: int,
 ) -> Float[Array, "{size} {size} {size}"]:
-    """_low_frequency_gaussian_window filter to pick out low frequencies for wavelet splitting.
+    """Filter to pick out low frequencies for wavelet splitting.
 
     Args:
         size (int): size of output window
@@ -404,7 +415,7 @@ def _low_frequency_gaussian_window(
 
 
 def _coeff_a_0l(ell: int, s0: float) -> float:
-    """_coeff_a_0l coefficient for spherical harmonics in wavelet.
+    """Coefficient for spherical harmonics in wavelet.
 
     See Eqn. 58 of [2].
 
@@ -421,7 +432,7 @@ def _coeff_a_0l(ell: int, s0: float) -> float:
 
 
 def _coeff_c_0l(ell: int, s0: float) -> float:
-    """_coeff_c_0l coefficient for 3D cake wavelet.
+    """Coefficient for 3D cake wavelet.
 
     See Eqn. 63 of [2].
 
@@ -450,7 +461,7 @@ def cake_wavelet_3d_fourier(
     big_ell: int,
     centered: bool = False,
 ) -> Complex[Array, "{size} {size} {size}"]:
-    """cake_wavelet_3d_fourier 3D cake wavelet, in the Fourier domain.
+    """3D cake wavelet, in the Fourier domain.
 
     Args:
         size (int): size of output wavelet (will be size^3)
@@ -499,7 +510,7 @@ def cake_wavelet_3d_fourier(
 def split_cake_wavelet_fourier(
     wavelet: Complex[Array, "..."], s_rho: float
 ) -> Tuple[Complex[Array, "..."], Complex[Array, "..."]]:
-    """split_cake_wavelet_3d_fourier split the wavelet into high/low frequency components.
+    """Split the wavelet into high/low frequency components.
 
     See Sect. 2.1.1 of [2], this implements Eqns 18 with Gaussian window specified by Eqn. 19.
 

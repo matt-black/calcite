@@ -120,7 +120,7 @@ def gaussian_filter(
     mode: str = "constant",
     cval: float = 0.0,
     axis: int | None = None,
-    precision: PrecisionLike | None = None
+    precision: PrecisionLike | None = None,
 ) -> Real[Array, " a"]:
     """gaussian_filter multi-dimensional Gaussian filter.
 

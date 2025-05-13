@@ -18,6 +18,15 @@ from .gabor import gabor_kernel_2d_real
 from .gabor import gabor_kernel_2d_real_scikit
 
 
+__all__ = [
+    "filter_bank_2d",
+    "filter_bank_2d_scikit",
+    "morlet_kernel_2d_real",
+    "morlet_kernel_2d_fourier",
+    "morlet_kernel_2d_real_scikit",
+]
+
+
 def filter_bank_2d(
     size_h: int,
     size_w: int,
@@ -30,7 +39,7 @@ def filter_bank_2d(
     freq_prefactor: float = 3 * math.pi / 4,
     gamma_prefactor: float = 4.0,
 ) -> Num[Array, "{n_scales} {n_orientations} {n_phases} {size_h} {size_w}"]:
-    """filter_bank_2d Filter bank of 2D Morlet filters.
+    """Filter bank of 2D Morlet filters.
 
     The resulting bank is a 5D tensor (n_scales x n_orientations x n_phases x size_h x size_w).
 
@@ -109,7 +118,7 @@ def morlet_kernel_2d_real(
     offset: float = 0.0,
     dtype=jnp.complex64,
 ) -> Complex[Array, "{size_h} {size_w}"]:
-    """morlet_kernel_2d Real-space kernel for 2D Morlet filter.
+    """Real-space kernel for 2D Morlet filter.
 
     Args:
         size_h (int): spatial size of filter, height, in pixels.
@@ -144,7 +153,7 @@ def morlet_kernel_2d_fourier(
     offset: float = 0.0,
     dtype=jnp.float32,
 ) -> Real[Array, "{size_h} {size_w}"]:
-    """morlet_kernel_2d Real-space kernel for 2D Morlet filter.
+    """Real-space kernel for 2D Morlet filter.
 
     Args:
         size_h (int): spatial size of filter, height, in pixels.
@@ -178,8 +187,8 @@ def filter_bank_2d_scikit(
     sigma_prefactor: float = 0.8,
     freq_prefactor: float = 3 * math.pi / 4,
     gamma_prefactor: float = 4.0,
-):
-    """filter_bank_2d_scikit Filter bank of 2D Morlet kernels, generated via the scikit API.
+) -> Complex[Array, "{n_orientations} sze_h sze_w"]:
+    """Filter bank of 2D Morlet kernels, generated via the scikit API.
 
     Args:
         n_stds (float): size of output kernel, in standard deviations
@@ -261,7 +270,7 @@ def morlet_kernel_2d_real_scikit(
     shape: Tuple[int, int] | None = None,
     dtype=jnp.complex64,
 ) -> Complex[Array, "h w"]:
-    """morlet_kernel_2d_real_scikit Real-space 2D Morlet kernel.
+    """Real-space 2D Morlet kernel, using function similar to that of scikit.
 
     Args:
         frequency (float): Spatial frequency of the harmonic function, in pixels.

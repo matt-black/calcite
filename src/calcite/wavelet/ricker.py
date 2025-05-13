@@ -13,11 +13,19 @@ from jaxtyping import Complex
 from jaxtyping import Float
 
 
+__all__ = [
+    "ricker_kernel_1d_real",
+    "ricker_kernel_2d_real",
+    "ricker_kernel_2d_fourier",
+    "ricker_kernel_3d_real",
+]
+
+
 def ricker_kernel_1d_real(
     length: int,
     sigma: float,
 ) -> Float[Array, " {length}"]:
-    """ricker_kernel_1d_real one dimensional Ricker kernel.
+    """One dimensional Ricker kernel.
 
     Args:
         length: length of the filter.
@@ -40,7 +48,7 @@ def ricker_kernel_2d_real(
     sigma_x: float,
     sigma_y: float,
 ) -> Float[Array, "{size_h} {size_w}"]:
-    """ricker_kernel_2d_real generate a real-space 2D Ricker kernel.
+    """Generate a real-space 2D Ricker kernel.
 
     Args:
         size_h (int): size of the filter, # rows
@@ -68,7 +76,7 @@ def ricker_kernel_2d_fourier(
     sigma_x: float,
     sigma_y: float,
 ) -> Complex[Array, "{size_h} {size_w}"]:
-    """ricker_kernel_2d_fourier generate a fourier-space 2D Ricker kernel.
+    """Generate a fourier-space 2D Ricker kernel.
 
     Args:
         size_h (int): size of the filter, # rows
@@ -90,7 +98,7 @@ def ricker_kernel_3d_real(
     sigma_y: float,
     sigma_z: float,
 ) -> Float[Array, "{size_z} {size_h} {size_w}"]:
-    """ricker_kernel_3d_real generate a real-space 3D Ricker kernel.
+    """Generate a real-space 3D Ricker kernel.
 
     Formula is taken from [1].
 

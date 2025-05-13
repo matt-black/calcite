@@ -5,7 +5,6 @@ description = "wavelets, scattering, and g-cnns in jax"
 authors = [{ name = "Matt Black", email = "mb46@princeton.edu" }]
 requires-python = ">=3.11,<4.0"
 readme = "README.md"
-license = "GPLv3"
 classifiers = ["Development Status :: 2 - Pre-Alpha"]
 dependencies = [
     "jax>=0.5.0,<0.6",

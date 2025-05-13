@@ -1,3 +1,3 @@
 # calcite
 
-the scattering transform, in `jax`
+continuous and discrete wavelets, and the scattering transform, in `jax`.

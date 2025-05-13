@@ -6,7 +6,7 @@ from jaxtyping import Float
 
 
 class WaveletSymmetry(Enum):
-    """WaveletSymmetry types of symmetry a wavelet can have."""
+    """Types of symmetry a wavelet can have."""
 
     unknown = -1
     asymmetric = 0
@@ -17,7 +17,7 @@ class WaveletSymmetry(Enum):
 
 @dataclass
 class Wavelet:
-    """Wavelet base class for wavelets.
+    """Base class for wavelets.
 
     Simple container holding properties that are common to all wavelets, discrete & continuous.
     """
@@ -31,7 +31,7 @@ class Wavelet:
 
 @dataclass
 class DiscreteWavelet(Wavelet):
-    """DiscreteWavelet discrete wavelet class.
+    """Discrete wavelet class.
 
     Contains de- and reconstruction filters for a given wavelet, along with some properties of the wavelet.
     """

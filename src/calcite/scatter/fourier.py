@@ -21,8 +21,11 @@ from .util import apply_filter_bank
 from .util import subsample_field
 
 
+__all__ = ["scattering_fields", "scattering_coeffs", "complex_modulus"]
+
+
 def complex_modulus(x: Complex[Array, "..."]) -> Complex[Array, "..."]:
-    """complex_modulus Compute modulus of scattering field.
+    """Compute modulus of scattering field.
 
     Args:
         x (Complex[Array]): input field.
@@ -42,7 +45,7 @@ def scattering_fields(
     psi2: Array | None = None,
     nonlinearity: Callable[[Array], Array] = complex_modulus,
 ) -> Tuple[List[Array], List[List[Array]]]:
-    """scattering_fields Compute scattering fields.
+    """Compute scattering fields.
 
     Args:
         x (Array): input array
@@ -52,7 +55,6 @@ def scattering_fields(
         psi1 (Array): wavelet filter bank for first layer
         psi2 (Array, optional): wavelet filter bank for second layer
         nonlinearity (Callable[[Array],Array], optional): nonlinearity to use after each wavelet transform. Defaults to complex modulus.
-        pad_input (bool, optional): pad the input to help prevent convolution artifacts. Defaults to True.
     Raises:
         ValueError: if image width or height isn't evenly divisible by adicity^(n_scales)
 
@@ -101,7 +103,7 @@ def scattering_coeffs(
     reduction: str = "local",
     nonlinearity: Callable[[Array], Array] = complex_modulus,
 ) -> Tuple[Real[Array, "..."], Real[Array, "..."], Real[Array, "..."]]:
-    """scattering_coeffs Compute scattering coefficients for input field, `x`.
+    """Compute scattering coefficients for input field, `x`.
 
     Args:
         x (Array): input tensor. Coefficients are computed on last 2 dimensions. Should be Fourier domain.
