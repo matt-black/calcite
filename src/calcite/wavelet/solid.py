@@ -59,7 +59,7 @@ def solid_harmonic_2d(
         raise ValueError("invalid space")
 
 
-def phi_ell(ell: int, r: float, psi: float) -> float:
+def phi_ell(ell: int, r: Array, psi: Array) -> Array:
     """2D solid harmonic wavelet value.
 
     Args:
@@ -78,11 +78,11 @@ def phi_ell(ell: int, r: float, psi: float) -> float:
     )
 
 
-def phi_hat_ell(ell: int, _lambda: float, alpha: float) -> float:
+def phi_hat_ell(ell: int, _lambda: Array, alpha: Array) -> Array:
     """Fourier space 2D solid harmonic wavelet value.
 
     Args:
-        ell (float): polynomial order
+        ell (int): polynomial order
         _lambda (float): frequency
         alpha (float): angle
 
@@ -97,7 +97,7 @@ def phi_hat_ell(ell: int, _lambda: float, alpha: float) -> float:
     )
 
 
-def phi_ell_m(ell: int, m: int, r: float, theta: float, psi: float) -> float:
+def phi_ell_m(ell: Array, m: Array, r: Array, theta: Array, psi: Array) -> Array:
     """Real space 3D solid harmonic wavelet value.
 
     Args:
@@ -119,8 +119,8 @@ def phi_ell_m(ell: int, m: int, r: float, theta: float, psi: float) -> float:
 
 
 def phi_hat_ell_m(
-    ell: int, m: int, _lambda: float, alpha: float, beta: float
-) -> float:
+    ell: Array, m: Array, _lambda: float, alpha: Array, beta: Array
+) -> Array:
     """Fourier space 3D solid harmonic wavelet value.
 
     Args:

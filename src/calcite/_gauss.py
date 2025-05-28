@@ -138,10 +138,8 @@ def gaussian_filter(
         Real[Array]
     """
     if isinstance(sigma, Number) and axis is None:
-        sigma = [
-            sigma,
-        ] * input.ndim
-    for ax, _sigma in zip(range(input.ndim), sigma):
+        sigma = [sigma,] * input.ndim # type: ignore
+    for ax, _sigma in zip(range(input.ndim), sigma): # type: ignore
         input = gaussian_filter_1d(
             input,
             _sigma,
@@ -157,7 +155,7 @@ def gaussian_filter(
 
 
 def _gauss_prefactor(
-    sigma: Float[Array, ""], d: Int[Array, ""]
+    sigma: float, d: int,
 ) -> Float[Array, ""]:
     """_gauss_prefactor constant prefactor for gaussians.
 
@@ -269,5 +267,5 @@ def convolve(x: Array, *sigmas, **kwargs) -> Array:
             )
     out = x.copy()
     for axis, sigma in enumerate(sigmas):
-        out = gaussian_filter_1d(out, sigma, axis, order=0, **kwargs)
+        out = gaussian_filter_1d(out, sigma, axis, order=0, **kwargs) # type: ignore
     return out

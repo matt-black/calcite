@@ -3,8 +3,8 @@
 To avoid artifacts in the convolution, inputs must be appropriately padded.
 """
 
-from typing import Iterable
 from typing import List
+from typing import Tuple
 
 import jax.numpy as jnp
 from jaxtyping import Array
@@ -44,7 +44,7 @@ def center_pad_2d(
 
 
 def uncenter_pad(
-    y: Num[Array, "..."], shape: Iterable[int] | int
+    y: Num[Array, "..."], shape: List[int] | Tuple[int,...],
 ) -> Num[Array, "..."]:
     """Remove center padding of input array.
 
@@ -67,7 +67,7 @@ def uncenter_pad(
 
 
 def padded_shape(
-    shape: Iterable[int], adicity: int, scale: int
+    shape: List[int], adicity: int, scale: int
 ) -> int | List[int]:
     """Compute the shape of the padded array.
 

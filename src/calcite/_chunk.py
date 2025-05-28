@@ -11,7 +11,7 @@ from typing import Tuple
 from typing import Union
 
 import jax.numpy as jnp
-from jaxtyping import Array
+from jaxtyping import Array, Num
 
 
 # bounding box types
@@ -72,12 +72,12 @@ def crop_and_pad_for_conv(
         Array
     """
     if bbox is None:
-        bbox = tuple(zip([0, 0, 0], list(vol.shape)))
-    (padl, padr), (lbd, ubd) = _crop_bounds_and_padding(vol, bbox, pad)
+        bbox = tuple(zip([0, 0, 0], list(vol.shape))) # type: ignore
+    (padl, padr), (lbd, ubd) = _crop_bounds_and_padding(vol, bbox, pad) # type: ignore
     return _crop_and_pad(vol, padl, padr, lbd, ubd)
 
 
-def _crop_bounds_and_padding(vol: Array, bbox: BBox3D, pad: int) -> Tuple[
+def _crop_bounds_and_padding(vol: Num[Array, "a b c"], bbox: BBox3D, pad: int) -> Tuple[
     Tuple[Tuple[int, int, int], Tuple[int, int, int]],
     Tuple[Tuple[int, int, int], Tuple[int, int, int]],
 ]:
@@ -87,7 +87,6 @@ def _crop_bounds_and_padding(vol: Array, bbox: BBox3D, pad: int) -> Tuple[
         vol (Array): input volume
         bbox (BBox3D): bounding box to crop volume down to
         pad (int): amount of padding past bbox (same for all axes)
-        :param vol: input volume
 
     Returns:
         paddings and upper/lower bounds
@@ -105,7 +104,7 @@ def _crop_bounds_and_padding(vol: Array, bbox: BBox3D, pad: int) -> Tuple[
     ubd = [x[1] + pad for x, _ in zip(bbox, shp)]
     pdr = tuple([v - s if v > s else 0 for v, s in zip(ubd, shp)])
     ubd = tuple([s if v > s else v for v, s in zip(ubd, shp)])
-    return (pdl, pdr), (lbd, ubd)
+    return (pdl, pdr), (lbd, ubd) # type: ignore
 
 
 def _crop_and_pad(
@@ -165,7 +164,7 @@ def calculate_3d_chunks(
                 chunk_shape,
             ]
             * 3
-        )
+        ) # type: ignore
     else:
         chunk_shape = chunk_shape
     if isinstance(overlap, int):
@@ -174,26 +173,26 @@ def calculate_3d_chunks(
                 overlap,
             ]
             * 3
-        )
+        ) # type: ignore
     else:
         overlap = overlap
     # determine padding & resulting shape
-    pad_size = [_pad_amount(d, cd) for d, cd in zip(shape, chunk_shape)]
+    pad_size = [_pad_amount(d, cd) for d, cd in zip(shape, chunk_shape)] # type: ignore
     pads = [_pad_splits(p) for p in pad_size]
     padded_shape = [s + p for s, p in zip(shape, pad_size)]
     # determine how (padded) array will be chunked
-    n_chunk = [s // c for s, c in zip(padded_shape, chunk_shape)]
+    n_chunk = [s // c for s, c in zip(padded_shape, chunk_shape)] # type: ignore
     # make sure division worked correctly (chunks should divide padded shape evenly)
     if not all(
-        [n * c == s for n, c, s in zip(n_chunk, chunk_shape, padded_shape)]
+        [n * c == s for n, c, s in zip(n_chunk, chunk_shape, padded_shape)] # type: ignore
     ):
         raise Exception("padding didnt ensure correct division")
     chunk_mults = product(*[range(n) for n in n_chunk])
     chunk_windows = {}
     for chunk_idx, chunk_mult in enumerate(chunk_mults):
         # these indices represent where in the padded data we are reading from
-        idx0 = [m * s for m, s in zip(chunk_mult, chunk_shape)]
-        idx1 = [i0 + s for i0, s in zip(idx0, chunk_shape)]
+        idx0 = [m * s for m, s in zip(chunk_mult, chunk_shape)] # type: ignore
+        idx1 = [i0 + s for i0, s in zip(idx0, chunk_shape)] # type: ignore
         pad_idxs = list(zip(idx0, idx1))
         # now figure out where in the actual data this corresponds to
         data_idxs, pad_amts, read_idxs, out_idxs = [], [], [], []
@@ -206,10 +205,10 @@ def calculate_3d_chunks(
                 left_out = pads[dim_idx][0]
             else:  # i0d >= 0 -- we're in the data
                 left_data = i0d
-                left_read = max(i0d - overlap[dim_idx], 0)
+                left_read = max(i0d - overlap[dim_idx], 0) # type: ignore
                 if left_read == 0:  # cant read full overlap in the data
                     left_pad = max(
-                        pads[dim_idx][0] - (overlap[dim_idx] - i0d), 0
+                        pads[dim_idx][0] - (overlap[dim_idx] - i0d), 0 # type: ignore
                     )
                 else:  # overlap region fully contained in data
                     left_pad = 0
@@ -220,11 +219,11 @@ def calculate_3d_chunks(
                 right_pad = i1 - padded_shape[dim_idx]
             else:
                 right_data = i1d
-                right_read = right_data + overlap[dim_idx]
+                right_read = right_data + overlap[dim_idx] # type: ignore
                 if right_read > shape[dim_idx]:
                     over_size = right_read - shape[dim_idx]
                     right_read = shape[dim_idx]
-                    right_pad = overlap[dim_idx] - over_size
+                    right_pad = overlap[dim_idx] - over_size # type: ignore
                 else:
                     right_pad = 0
             right_out = left_out + (right_data - left_data)
@@ -246,6 +245,6 @@ def calculate_3d_chunks(
             out_window.insert(0, channel_slice)
             pad_amts.insert(0, (0, 0))
         chunk_windows[chunk_idx] = ChunkProperties(
-            tuple(data_window), tuple(read_window), pad_amts, tuple(out_window)
+            tuple(data_window), tuple(read_window), pad_amts, tuple(out_window) # type: ignore
         )
     return chunk_windows

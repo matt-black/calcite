@@ -110,6 +110,8 @@ def build_wavelet(name: str) -> DiscreteWavelet:
             idx1 = val1 // 5
         elif idx0 == 5:  # bior6
             idx1 = val1 // 8
+        else:
+            raise ValueError("invalid biorthogonal wavelet specified")
         dec_lo, dec_hi, rec_lo, rec_hi = filter_bank(_coeffs.bior[idx0][idx1])
         raise NotImplementedError("todo")
     elif name.startswith("dmey"):

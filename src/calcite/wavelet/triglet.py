@@ -95,15 +95,15 @@ def triglet_2d(
 
 
 def psihat_jl(
-    r: float,
-    theta: float,
+    r: Array,
+    theta: Array,
     j: int,
     l: int,
     j_im: int,
     ell: int,
     w: int = 2,
     t: int = 1,
-) -> float:
+) -> Array:
     r"""Value of triglet at (r, \theta).
 
     Args:

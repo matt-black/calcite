@@ -53,19 +53,20 @@ def wavedec(
     Returns:
         Tuple[Array, List[List[Array]]]: tuple of approximation coefficients, followed by a list of lists of arrays. Each list of arrays in the list corresponds to the detail coefficients at that level.
     """
-    if isinstance(wavelets, str):
-        wavelet = build_wavelet(wavelets)
+    if isinstance(wavelets, str) or isinstance(wavelets, DiscreteWavelet):
+        if isinstance(wavelets, str):
+            wavelet = build_wavelet(wavelets)
+        else:
+            wavelet = wavelets
         dec_pairs = (wavelet.dec_lo, wavelet.dec_hi)
-    elif isinstance(wavelets, DiscreteWavelet):
-        wavelet = wavelets
-        dec_pairs = (wavelet.dec_lo, wavelet.dec_hi)
+        filt_len = len(dec_pairs[0])
     else:
-        wavelets = map(_build_or_id_wavelet, wavelets)
-        dec_pairs = [(wvlet.dec_lo, wvlet.dec_hi) for wvlet in wavelets]
+        wavelets = list(map(_build_or_id_wavelet, wavelets))
+        dec_pairs = [(wvlet.dec_lo, wvlet.dec_hi) for wvlet in wavelets] # type: ignore
+        filt_len = min(map(lambda p: len(p[0]), dec_pairs))
+    min_axis_shape = min(x.shape)
     if level is None:
         # compute max. possible level at which we can take a DWT
-        min_axis_shape = min(x.shape)
-        filt_len = wavelet.dec_lo.shape[0]
         level = math.floor(math.log2(min_axis_shape // (filt_len - 1)))
     approx = x
     coeffs = []
@@ -115,7 +116,7 @@ def waverec(
         if len(details) == 1:  # 1d, c_d
             c_d = details[0]
             approx = idwt_1d(
-                approx, c_d, wavelets[0].rec_lo, wavelets[0].rec_hi, pad_mode
+                approx, c_d, wavelets[0].rec_lo, wavelets[0].rec_hi, pad_mode # type: ignore
             )
         elif len(details) == 3:  # 2d, (c_da, c_ad, c_dd)
             c_da, c_ad, c_dd = details
@@ -128,10 +129,10 @@ def waverec(
                 c_da,
                 c_ad,
                 c_dd,
-                wv_col.rec_lo,
-                wv_col.rec_hi,
-                wv_row.rec_lo,
-                wv_row.rec_hi,
+                wv_col.rec_lo, # type: ignore
+                wv_col.rec_hi, # type: ignore
+                wv_row.rec_lo, # type: ignore
+                wv_row.rec_hi, # type: ignore
                 pad_mode,
             )
         elif len(details) == 7:  # 3d
@@ -149,12 +150,12 @@ def waverec(
                 c_dad,
                 c_dda,
                 c_ddd,
-                wv_c.rec_lo,
-                wv_c.rec_hi,
-                wv_r.rec_lo,
-                wv_r.rec_hi,
-                wv_z.rec_lo,
-                wv_z.rec_hi,
+                wv_c.rec_lo, # type: ignore
+                wv_c.rec_hi, # type: ignore
+                wv_r.rec_lo, # type: ignore
+                wv_r.rec_hi, # type: ignore
+                wv_z.rec_lo, # type: ignore
+                wv_z.rec_hi, # type: ignore
                 pad_mode,
             )
         else:
@@ -186,7 +187,7 @@ def dwt(
             dec_lo, dec_hi = dec_pairs[0]
         else:
             dec_lo, dec_hi = dec_pairs
-        return dwt_1d(x, dec_lo, dec_hi, pad_mode)
+        return dwt_1d(x, dec_lo, dec_hi, pad_mode) # type: ignore
     elif num_dims == 2:
         if isinstance(dec_pairs, tuple):
             dec_lo, dec_hi = dec_pairs
@@ -197,11 +198,11 @@ def dwt(
                 dec_lor, dec_hir = dec_lo, dec_hi
             else:
                 dec_lor, dec_hir = dec_pairs[0]
-        return dwt_2d(x, dec_lo, dec_hi, dec_lor, dec_hir, pad_mode)
+        return dwt_2d(x, dec_lo, dec_hi, dec_lor, dec_hir, pad_mode) # type: ignore
     elif num_dims == 3:
         if isinstance(dec_pairs, tuple):
-            dec_lo, dec_hi = dec_pairs
             dec_lor, dec_hir = dec_pairs
+            dec_loz, dec_hiz = dec_pairs
         else:
             dec_lo, dec_hi = dec_pairs[2]
             if len(dec_pairs) == 1:
@@ -211,7 +212,7 @@ def dwt(
                 dec_lor, dec_hir = dec_pairs[1]
                 dec_loz, dec_hiz = dec_pairs[0]
         return dwt_3d(
-            x, dec_lo, dec_hi, dec_lor, dec_hir, dec_loz, dec_hiz, pad_mode
+            x, dec_lo, dec_hi, dec_lor, dec_hir, dec_loz, dec_hiz, pad_mode # type: ignore
         )
     else:
         raise ValueError("invalid # of dimensions, only valid for 1/2d inputs")
@@ -283,8 +284,8 @@ def idwt_1d(
     c_a = _upsample_interleave_zeros(c_a, 2)
     c_d = _upsample_interleave_zeros(c_d, 2)
     if pad_mode == "periodization":
-        c_a = jnp.pad(c_a, rec_lo, half_fl, mode="wrap")
-        c_d = jnp.pad(c_d, rec_hi, half_fl, mode="wrap")
+        c_a = jnp.pad(c_a, half_fl, mode="wrap")
+        c_d = jnp.pad(c_d, half_fl, mode="wrap")
     approx = jnp.convolve(c_a, rec_lo, "same")
     detail = jnp.convolve(c_d, rec_hi, "same")
     recon = approx + detail
@@ -462,10 +463,10 @@ def dwt_3d(
     """
     if jnp.iscomplexobj(x):
         aaa_r, aad_r, ada_r, add_r, daa_r, dad_r, dda_r, ddd_r = dwt_3d(
-            jnp.real(x), dec_lo, dec_hi, pad_mode
+            jnp.real(x), dec_lo, dec_hi, dec_lo_row, dec_hi_row, dec_lo_z, dec_hi_z, pad_mode
         )
         aaa_i, aad_i, ada_i, add_i, daa_i, dad_i, dda_i, ddd_i = dwt_3d(
-            jnp.imag(x), dec_lo, dec_hi, pad_mode
+            jnp.imag(x), dec_lo, dec_hi, dec_lo_row, dec_hi_row, dec_lo_z, dec_hi_z, pad_mode
         )
         c_aaa = jax.lax.complex(aaa_r, aaa_i)
         c_aad = jax.lax.complex(aad_r, aad_i)

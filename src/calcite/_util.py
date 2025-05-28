@@ -278,7 +278,7 @@ def legendre_recurrence(
         f=body_fun,
         init=(1, (p_init[0], p_init[1])),
         xs=(None),
-        length=(n_max - 1),
+        length=(n_max - 1), # type: ignore
     )
     p_n = jnp.concatenate((p_init, p_n), axis=0)
     return p_n[n]
@@ -300,7 +300,7 @@ def eval_legendre(
         Implementation taken from: https://github.com/jax-ml/jax/issues/14101
     """
     if n == 0:
-        return 1
+        return jnp.array(1)
     n = jnp.asarray([n]) if isinstance(n, int) else jnp.asarray(n)
     x = jnp.asarray([x]) if isinstance(x, Number) else jnp.asarray(x)
     n_max = n.max()

@@ -296,6 +296,7 @@ def learned_scattering_fields(
                 ),
                 proj_kernel1[j1],
                 window_strides=(1, 1),
+                padding='same',
                 dimension_numbers=("NCHW", "OIHW", "NCHW"),
             )
         )
@@ -334,6 +335,7 @@ def learned_scattering_fields(
                     ),
                     proj_kernel2[j1][j2 - j1],
                     window_strides=(1, 1),
+                    padding='same',
                     dimension_numbers=("NCHW", "OIHW", "NCHW"),
                 )
             )

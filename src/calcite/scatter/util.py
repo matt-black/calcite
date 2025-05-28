@@ -126,7 +126,7 @@ def group_fields_by_size(
     Returns:
         List[Array]: list of 6D arrays (CLMHW) where elements correspond to the same spatial size, sorted in descending order.
     """
-    num_filt_dims = len(field1.shape[0]) - (num_spatial_dims + 1)
+    num_filt_dims = len(field1[0].shape) - (num_spatial_dims + 1)
     field1 = [
         jnp.expand_dims(f, axis=range(num_filt_dims + 1, num_filt_dims + 3))
         for f in field1

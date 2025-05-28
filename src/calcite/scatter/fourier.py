@@ -102,7 +102,7 @@ def scattering_coeffs(
     strategy: str = "breadth",
     reduction: str = "local",
     nonlinearity: Callable[[Array], Array] = complex_modulus,
-) -> Tuple[Real[Array, "..."], Real[Array, "..."], Real[Array, "..."]]:
+) -> Tuple[Real[Array, "..."], Real[Array, "..."], List[Real[Array, "..."]]]:
     """Compute scattering coefficients for input field, `x`.
 
     Args:
@@ -184,7 +184,7 @@ def scattering_coeffs(
             return out[..., slc_h, slc_w]
         else:  # global reduction takes mean over space dimensions
             spc_dims = reversed([-i for i in range(1, num_spatial_dims + 1)])
-            return jnp.mean(out[..., slc_h, slc_w], axis=spc_dims)
+            return jnp.mean(out[..., slc_h, slc_w], axis=spc_dims) # type: ignore
 
     # first (zero-order) scattering coeff. is just low-pass'd input
     s0 = scatter_coeff(x)

@@ -78,7 +78,7 @@ def _periodize1d(
     return jax.lax.conv_general_dilated(
         jnp.expand_dims(jnp.multiply(x, mask), (0, 1)),
         jnp.expand_dims(jnp.ones(k, dtype=x.dtype), (0, 1)),
-        window_strides=1,
+        window_strides=(1,),
         padding="valid",
         rhs_dilation=(sze // k),
     )[0, 0, ...]

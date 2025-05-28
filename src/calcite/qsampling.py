@@ -208,7 +208,7 @@ def optimize_multishell(
         args=(num_shells, num_pts_per_shell, weights, antipodal),
         iprint=0,
     )
-    vects = vects.reshape((k, 3))
+    vects = vects.reshape((k, 3)) # type: ignore
     vects = (vects.T / numpy.sqrt((vects**2).sum(1))).T
     return vects
 

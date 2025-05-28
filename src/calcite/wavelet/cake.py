@@ -51,7 +51,7 @@ def filter_bank_2d(
     overlap_factor: int,
     inflection_point_hf: float,
     poly_order_hf: int,
-    inflection_point_lf: float | None,
+    inflection_point_lf: float,
     poly_order_lf: float | None,
     centered: bool = False,
 ) -> Num[Array, "{n_scales} {n_orientations} {size} {size}"]:
@@ -109,7 +109,7 @@ def orientation_bank_2d(
     inflection_point_hf: float,
     poly_order_hf: int,
     inflection_point_lf: float | None,
-    poly_order_lf: float | None,
+    poly_order_lf: int | None,
     centered: bool = False,
 ) -> Num[Array, " {n_orientations} {size} {size}"]:
     """Create a filter bank of 2D cake kernels.
@@ -158,7 +158,7 @@ def orientation_bank_2d_real(
     inflection_point_hf: float,
     poly_order_hf: int,
     inflection_point_lf: float | None,
-    poly_order_lf: float | None,
+    poly_order_lf: int | None,
 ) -> Complex[Array, " {n_orientations} {size} {size}"]:
     """Create a filter bank of real-space 2D cake kernels.
 
@@ -227,7 +227,7 @@ def orientation_bank_2d_fourier(
     if (
         inflection_point_lf is not None
     ):  # setup the high-pass component of the filtering
-        dc_window = _radial_window_2d(size, poly_order_lf, inflection_point_lf)
+        dc_window = _radial_window_2d(size, poly_order_lf, inflection_point_lf) # type: ignore
     else:
         dc_window = jnp.zeros_like(rad_damping)
     bandpass = rad_damping - dc_window
@@ -249,7 +249,7 @@ def orientation_bank_2d_fourier(
     else:
         return jnp.roll(
             jnp.stack([bandpass * b_spline for b_spline in b_splines], axis=0),
-            (-size / 2, -size / 2),
+            (-size // 2, -size // 2),
             axis=(-2, -1),
         )
 
@@ -324,10 +324,10 @@ def _bspline_profile_2d(
                 * jnp.sign(order + (n + 1) / 2 - k)
             )
         splines.append(ospline / (2 * factorial(n)))
-    ang_interval = jnp.heaviside(
-        (angle_grid - (order - 0.5 + eps)), 1
-    ) * jnp.heaviside((-(angle_grid - (order + 0.5))), 1)
-    ang_ints.append(ang_interval)
+        ang_interval = jnp.heaviside(
+            (angle_grid - (order - 0.5 + eps)), 1
+        ) * jnp.heaviside((-(angle_grid - (order + 0.5))), 1)
+        ang_ints.append(ang_interval)
     return jnp.sum(
         jnp.stack(ang_ints, axis=0) * jnp.stack(splines, axis=0), axis=0
     )
@@ -414,7 +414,7 @@ def _low_frequency_gaussian_window(
     return vals / jnp.amax(vals)
 
 
-def _coeff_a_0l(ell: int, s0: float) -> float:
+def _coeff_a_0l(ell: int, s0: float) -> Float[Array, ""]:
     """Coefficient for spherical harmonics in wavelet.
 
     See Eqn. 58 of [2].
@@ -431,7 +431,7 @@ def _coeff_a_0l(ell: int, s0: float) -> float:
     )
 
 
-def _coeff_c_0l(ell: int, s0: float) -> float:
+def _coeff_c_0l(ell: int, s0: float) -> Float[Array, ""]:
     """Coefficient for 3D cake wavelet.
 
     See Eqn. 63 of [2].
@@ -443,7 +443,7 @@ def _coeff_c_0l(ell: int, s0: float) -> float:
     Returns:
         float: coefficient value
     """
-    legendre_l0 = eval_legendre(ell, 0)
+    legendre_l0 = eval_legendre(ell, 0) # type: ignore
     a_l0 = _coeff_a_0l(ell, s0)
     return legendre_l0 * a_l0 + (1 - (jnp.pow(-1, ell)) / 2) * a_l0
 
@@ -502,7 +502,7 @@ def cake_wavelet_3d_fourier(
     else:
         return jnp.roll(
             wavelet,
-            (-size / 2, -size / 2, -size / 2),
+            (-size // 2, -size // 2, -size // 2),
             axis=(-3, -2, -1),
         )
 
