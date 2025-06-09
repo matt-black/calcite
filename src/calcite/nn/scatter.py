@@ -14,7 +14,7 @@ from jaxtyping import PRNGKeyArray
 
 
 class LearnedScatteringLayer(eqx.nn.Conv):
-    """LearnedScatteringLayer compute a learned scattering field.
+    """Compute a learned scattering field.
 
     Takes in an N-dimensional, Fourier-space input and computes its channel-wise convolution with the input filter bank whose weights are fixed during training. The output of this is passed to a learnable 1x1 convolution which then produces the output of this layer.
     """
@@ -25,8 +25,10 @@ class LearnedScatteringLayer(eqx.nn.Conv):
         in_channels: int,
         out_channels: int,
         filter_bank: Array,
+        *,
+        key: PRNGKeyArray,
     ):
-        """__init__ initialize the layer.
+        """Initialize the layer.
 
         Args:
             num_spatial_dims (int): number of spatial dimensions.
@@ -47,14 +49,15 @@ class LearnedScatteringLayer(eqx.nn.Conv):
             use_bias=False,
             padding_mode="ZEROS",
             dtype=jax.numpy.complex64,
+            key=key,
         )
-        self.filter_bank = jax.stop_gradient(filter_bank)
+        self.filter_bank = jax.lax.stop_gradient(filter_bank)
         self._space_shape = [s for s in filter_bank.shape[-num_spatial_dims:]]
 
     def __call__(
         self, x: Array, *, key: Optional[PRNGKeyArray] = None
     ) -> Array:
-        """__call__ do fixed convolution with the filter bank, then learned 1x1 convolution to trim results of filter bank convolution.
+        """Do fixed convolution with the filter bank, then learned 1x1 convolution to trim results of filter bank convolution.
 
         Args:
             x (Array): the input. should be a JAX array of shape `(in_channels, dim_1, ..., dim_N)` where `N=num_spatial_dims`.
