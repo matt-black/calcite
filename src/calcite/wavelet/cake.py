@@ -227,15 +227,18 @@ def orientation_bank_2d_fourier(
     if (
         inflection_point_lf is not None
     ):  # setup the high-pass component of the filtering
-        dc_window = _radial_window_2d(size, poly_order_lf, inflection_point_lf) # type: ignore
+        dc_window = _radial_window_2d(size, poly_order_lf, inflection_point_lf)  # type: ignore
     else:
         dc_window = jnp.zeros_like(rad_damping)
     bandpass = rad_damping - dc_window
     ang_grid = angular_coordinate_grid_2d(size)
     thetas = jnp.linspace(0, 2 * jnp.pi, n_orientations, False)
-    theta_diff = jnp.mean(jnp.diff(thetas))
     ang_grids = [
-        shift_remainder(ang_grid - theta + 2 * theta_diff) / s_phi
+        jnp.flipud(
+            jnp.fliplr(
+                jnp.abs(shift_remainder(ang_grid - theta) - jnp.pi) / s_phi
+            )
+        )
         for theta in thetas
     ]
     b_splines = [
@@ -299,13 +302,13 @@ def orientation_bank_3d_fourier(
 
 
 def _bspline_profile_2d(
-    n: int, angle_grid: Float[Array, " a a"]
+    n: int, angle_grid: Float[Array, "a a"]
 ) -> Float[Array, " a a"]:
     """Compute b-spline of order k=n+2.
 
     Args:
         n (int): spline order
-        angle_grid (Float[Array]): 2d grid of angles to compute bspline on
+        angle_grid (Float[Array, "a a"]): 2d grid of angles to compute bspline on
 
     Returns:
         Float[Array]
@@ -443,7 +446,7 @@ def _coeff_c_0l(ell: int, s0: float) -> Float[Array, ""]:
     Returns:
         float: coefficient value
     """
-    legendre_l0 = eval_legendre(ell, 0) # type: ignore
+    legendre_l0 = eval_legendre(ell, 0)  # type: ignore
     a_l0 = _coeff_a_0l(ell, s0)
     return legendre_l0 * a_l0 + (1 - (jnp.pow(-1, ell)) / 2) * a_l0
 

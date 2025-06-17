@@ -147,7 +147,7 @@ def angular_coordinate_grid_2d(size: int) -> Float[Array, "{size} {size}"]:
     """
     cent = size / 2.0
     x, y = jnp.meshgrid(jnp.arange(size), jnp.arange(size), indexing="xy")
-    return jnp.arctan2(y - cent, x - cent)
+    return jnp.fliplr(jnp.arctan2(y - cent, x - cent)) + jnp.pi
 
 
 def angular_coordinate_grids_3d(
@@ -165,7 +165,9 @@ def angular_coordinate_grids_3d(
     c = jnp.stack([x, y, z], axis=-1)
     # do the rotation
     if alpha != 0 or beta != 0 or gamma != 0:
-        rot = Rotation.from_euler("zyx", [gamma, beta, alpha], degrees=False)
+        rot = Rotation.from_euler(
+            "zyx", jnp.asarray([gamma, beta, alpha]), degrees=False
+        )
         c = jnp.einsum("ij,...j->...i", rot.as_matrix(), c)
     rho = jnp.sqrt(jnp.sum(jnp.square(c), axis=-1))
     theta = jnp.arctan2(c[..., 1], c[..., 0])
@@ -200,7 +202,6 @@ def polarize2d(
         Array: single-sided version of wavelet
     """
     size_h, size_w = wvlet.shape[-2], wvlet.shape[-1]
-    shift = (-size_h / 2, -size_w / 2)
     if y_axis:
         x, _ = jnp.meshgrid(
             jnp.arange(0, size_w) - size_w / 2,
@@ -213,10 +214,10 @@ def polarize2d(
             jnp.arange(0, size_h) - size_h / 2,
             indexing="xy",
         )
-    if centered:
-        w_x = 0.5 * jax.lax.erf(x) + 0.5
-    else:
-        w_x = jnp.roll((0.5 * jax.lax.erf(x) + 0.5), shift, axis=(-2, -1))
+    # if centered:
+    w_x = 0.5 * jax.lax.erf(x) + 0.5
+    # else:
+    #    w_x = jnp.roll((0.5 * jax.lax.erf(x) + 0.5), shift, axis=(-2, -1))
     if positive:
         return w_x * wvlet
     else:
@@ -278,7 +279,7 @@ def legendre_recurrence(
         f=body_fun,
         init=(1, (p_init[0], p_init[1])),
         xs=(None),
-        length=(n_max - 1), # type: ignore
+        length=(n_max - 1),  # type: ignore
     )
     p_n = jnp.concatenate((p_init, p_n), axis=0)
     return p_n[n]

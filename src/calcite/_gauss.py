@@ -1,12 +1,10 @@
-from numbers import Number
-from typing import List
+from collections.abc import Sequence
 
 import jax.numpy as jnp
 import jax.scipy as jsp
 from jax._src.lax.lax import PrecisionLike
 from jaxtyping import Array
 from jaxtyping import Float
-from jaxtyping import Int
 from jaxtyping import Num
 from jaxtyping import Real
 
@@ -112,7 +110,7 @@ def gaussian_filter_1d(
 
 def gaussian_filter(
     input: Real[Array, "..."],
-    sigma: float | List[float] | Real[Array, " b"],
+    sigma: float | Sequence[float],
     order: int = 0,
     truncate: float = 4.0,
     *,
@@ -137,25 +135,53 @@ def gaussian_filter(
     Returns:
         Real[Array]
     """
-    if isinstance(sigma, Number) and axis is None:
-        sigma = [sigma,] * input.ndim # type: ignore
-    for ax, _sigma in zip(range(input.ndim), sigma): # type: ignore
-        input = gaussian_filter_1d(
-            input,
-            _sigma,
-            axis=ax,
-            order=order,
-            truncate=truncate,
-            radius=radius,
-            mode=mode,
-            precision=precision,
-            cval=cval,
-        )
-    return input
+    if isinstance(sigma, Sequence):
+        for ax, _sigma in zip(range(input.ndim), sigma):
+            input = gaussian_filter_1d(
+                input,
+                _sigma,
+                axis=ax,
+                order=order,
+                truncate=truncate,
+                radius=radius,
+                mode=mode,
+                precision=precision,
+                cval=cval,
+            )
+        return input
+    else:
+        if axis is None:
+            return gaussian_filter(
+                input,
+                [
+                    sigma,
+                ]
+                * input.ndim,
+                order,
+                truncate,
+                radius=radius,
+                mode=mode,
+                cval=cval,
+                axis=axis,
+                precision=precision,
+            )
+        else:
+            return gaussian_filter_1d(
+                input,
+                float(sigma),
+                axis=axis,
+                order=order,
+                truncate=truncate,
+                radius=radius,
+                mode=mode,
+                precision=precision,
+                cval=cval,
+            )
 
 
 def _gauss_prefactor(
-    sigma: float, d: int,
+    sigma: float,
+    d: int,
 ) -> Float[Array, ""]:
     """_gauss_prefactor constant prefactor for gaussians.
 
@@ -267,5 +293,5 @@ def convolve(x: Array, *sigmas, **kwargs) -> Array:
             )
     out = x.copy()
     for axis, sigma in enumerate(sigmas):
-        out = gaussian_filter_1d(out, sigma, axis, order=0, **kwargs) # type: ignore
+        out = gaussian_filter_1d(out, sigma, axis, order=0, **kwargs)  # type: ignore
     return out

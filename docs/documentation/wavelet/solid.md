@@ -1,4 +1,4 @@
-# `solid`
+# `wavelet.solid`
 
 Solid Harmonic Wavelets.
 

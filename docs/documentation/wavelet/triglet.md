@@ -1,4 +1,5 @@
 # `wavelet.triglet`
+
 Triglet wavelets.
 
 Introduced in [1].

@@ -1,4 +1,4 @@
-# `morlet`
+# `wavelet.morlet`
 
 Morlet wavelets.
 

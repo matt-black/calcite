@@ -1,4 +1,4 @@
-# `discrete`
+# `wavelet.discrete`
 
 Discrete Wavelets.
 

@@ -1,4 +1,4 @@
-# `gabor`
+# `wavelet.gabor`
 
 Gabor wavelets.
 
