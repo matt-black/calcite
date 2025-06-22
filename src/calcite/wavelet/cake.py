@@ -29,6 +29,7 @@ from .._util import radial_coordinate_grid_2d
 from .._util import radial_coordinate_grid_3d
 from .._util import shift_remainder
 from ..qsampling import optimize_singleshell
+from ..qsampling import xyz_to_angle
 
 
 __all__ = [
@@ -90,6 +91,7 @@ def filter_bank_2d(
         poly_order_hf=poly_order_hf,
         poly_order_lf=poly_order_lf,
         centered=centered,
+        return_angles=False,
     )
     return jnp.stack(
         [
@@ -111,7 +113,14 @@ def orientation_bank_2d(
     inflection_point_lf: float | None,
     poly_order_lf: int | None,
     centered: bool = False,
-) -> Num[Array, " {n_orientations} {size} {size}"]:
+    return_angles: bool = False,
+) -> (
+    Num[Array, "{n_orientations} {size} {size}"]
+    | Tuple[
+        Num[Array, "{n_orientations} {size} {size}"],
+        Float[Array, " {n_orientations}"],
+    ]
+):
     """Create a filter bank of 2D cake kernels.
 
     Args:
@@ -147,6 +156,7 @@ def orientation_bank_2d(
         poly_order_hf,
         inflection_point_lf,
         poly_order_lf,
+        return_angles=return_angles,
     )
 
 
@@ -159,7 +169,14 @@ def orientation_bank_2d_real(
     poly_order_hf: int,
     inflection_point_lf: float | None,
     poly_order_lf: int | None,
-) -> Complex[Array, " {n_orientations} {size} {size}"]:
+    return_angles: bool = False,
+) -> (
+    Complex[Array, " {n_orientations} {size} {size}"]
+    | Tuple[
+        Complex[Array, " {n_orientations} {size} {size}"],
+        Float[Array, " {n_orientations}"],
+    ]
+):
     """Create a filter bank of real-space 2D cake kernels.
 
     Args:
@@ -171,28 +188,53 @@ def orientation_bank_2d_real(
         poly_order_hf (int): order of high frequency filter polynomial. higher orders give a sharper rolloff
         inflection_point_lf (float): sets the low frequency cutoff of the wavelet
         poly_order_lf (int): order of low frequency filter polynomial. higher orders give a sharper rolloff
-
+        return_angles (bool, optional): whether to (also) return the angle at which each filter corresponds to. Defaults to False.
     Returns:
         Complex[Array]: [n_orientations x size x size] array of filters (1 per orientation)
     """
-    psi_hat = orientation_bank_2d_fourier(
-        n_orientations,
-        size,
-        spline_order,
-        overlap_factor,
-        inflection_point_hf,
-        poly_order_hf,
-        inflection_point_lf,
-        poly_order_lf,
-        centered=True,
-    )
-    return jnp.stack(
-        [
-            ifft2_centered(wvlet[0, ...])
-            for wvlet in jnp.split(psi_hat, n_orientations, axis=0)
-        ],
-        axis=0,
-    )
+    if return_angles:
+        psi_hat, thetas = orientation_bank_2d_fourier(
+            n_orientations,
+            size,
+            spline_order,
+            overlap_factor,
+            inflection_point_hf,
+            poly_order_hf,
+            inflection_point_lf,
+            poly_order_lf,
+            centered=True,
+            return_angles=True,
+        )
+        return (
+            jnp.stack(
+                [
+                    ifft2_centered(wvlet[0, ...])
+                    for wvlet in jnp.split(psi_hat, n_orientations, axis=0)
+                ],
+                axis=0,
+            ),
+            thetas,
+        )
+    else:
+        psi_hat = orientation_bank_2d_fourier(
+            n_orientations,
+            size,
+            spline_order,
+            overlap_factor,
+            inflection_point_hf,
+            poly_order_hf,
+            inflection_point_lf,
+            poly_order_lf,
+            centered=True,
+            return_angles=False,
+        )
+        return jnp.stack(
+            [
+                ifft2_centered(wvlet[0, ...])
+                for wvlet in jnp.split(psi_hat, n_orientations, axis=0)  # type: ignore
+            ],
+            axis=0,
+        )
 
 
 def orientation_bank_2d_fourier(
@@ -205,7 +247,14 @@ def orientation_bank_2d_fourier(
     inflection_point_lf: float | None,
     poly_order_lf: int | None,
     centered: bool = False,
-) -> Real[Array, " {n_orientations} {size} {size}"]:
+    return_angles: bool = False,
+) -> (
+    Real[Array, "{n_orientations} {size} {size}"]
+    | Tuple[
+        Real[Array, "{n_orientations} {size} {size}"],
+        Float[Array, " {n_orientations}"],
+    ]
+):
     """Create a filter bank of fourier-space 2D cake kernels.
 
     Args:
@@ -217,9 +266,10 @@ def orientation_bank_2d_fourier(
         poly_order_hf (int): order of high frequency filter polynomial. higher orders give a sharper rolloff
         inflection_point_lf (float): sets the low frequency cutoff of the wavelet
         poly_order_lf (int): order of low frequency filter polynomial. higher orders give a sharper rolloff
+        return_angles (bool, optional): whether to (also) return the angle at which each filter corresponds to. Defaults to False.
 
     Returns:
-        Complex[Array]: [n_orientations x size x size] array of filters (1 per orientation)
+        Real[Array]: [n_orientations x size x size] array of filters (1 per orientation)
     """
     s_phi = (2 * jnp.pi) / n_orientations
     # rad_damping gives the "low-pass" component of the frequency-space filtering
@@ -246,15 +296,19 @@ def orientation_bank_2d_fourier(
         for ang_grid in ang_grids
     ]
     if centered:
-        return jnp.stack(
+        bank = jnp.stack(
             [bandpass * b_spline for b_spline in b_splines], axis=0
         )
     else:
-        return jnp.roll(
+        bank = jnp.roll(
             jnp.stack([bandpass * b_spline for b_spline in b_splines], axis=0),
             (-size // 2, -size // 2),
             axis=(-2, -1),
         )
+    if return_angles:
+        return bank, thetas
+    else:
+        return bank
 
 
 def orientation_bank_3d_fourier(
@@ -267,7 +321,15 @@ def orientation_bank_3d_fourier(
     s_rho: float | None,
     big_ell: int,
     centered: bool = False,
-) -> Complex[Array, "{num_ori} {size} {size} {size}"]:
+    return_angles: bool = False,
+    angle_fmt: str = "euler_ZXZ",
+) -> (
+    Complex[Array, "{num_ori} {size} {size} {size}"]
+    | Tuple[
+        Complex[Array, "{num_ori} {size} {size} {size}"],
+        Float[Array, "..."],
+    ]
+):
     """Generate a filter bank of 3D cake wavelets.
 
     Args:
@@ -280,13 +342,14 @@ def orientation_bank_3d_fourier(
         s_rho (float|None):
         big_ell (int): order to compute the spherical harmonics up to.
         centered (bool, optional): whether the wavelets are centered in Fourier space (as if fftshift'd). Defaults to False.
+        return_angles (bool, optional): return angles corresponding to each wavelet in the filter bank. Defaults to False.
+        angle_fmt (str, optional): the format to return the angles in, if `return_angles` is set to `True`. Defaults to "euler_ZXZ".
 
     Returns:
-        Complex[Array, {num_ori} {size} {size} {size}]
+        Complex[Array, {num_ori} {size} {size} {size}] | Tuple[Complex[Array, {num_ori} {size} {size} {size}], Float[Array, ...]]
     """
-    angles = optimize_singleshell(num_ori, return_angles=True)
-    alpha = angles[:, 0]
-    gamma = angles[:, 1]
+    xyz = optimize_singleshell(num_ori, max_iter=100, antipodal=False)
+    abg = xyz_to_angle(xyz, "euler_xyz")
     cake_fun = Partial(
         cake_wavelet_3d_fourier,
         size,
@@ -298,7 +361,18 @@ def orientation_bank_3d_fourier(
         big_ell=big_ell,
         centered=centered,
     )
-    return jnp.stack([cake_fun(a, 0, g) for a, g in zip(alpha, gamma)], axis=0)
+    bank = jnp.stack(
+        [
+            cake_fun(abg[i, 0], abg[i, 1], abg[i, 2])
+            for i in range(abg.shape[0])
+        ],
+        axis=0,
+    )
+    if return_angles:
+        angles = jnp.asarray(xyz_to_angle(xyz, angle_fmt))
+        return bank, angles
+    else:
+        return bank
 
 
 def _bspline_profile_2d(
@@ -468,7 +542,7 @@ def cake_wavelet_3d_fourier(
 
     Args:
         size (int): size of output wavelet (will be size^3)
-        gamma_window (float): gamma parameter for the radial window, fixes the inflection point for the rolloff at gamma*nyquist_freq
+        gamma_window (float): gamma parameter for the radial window, fixes the inflection point for the rolloff at `gamma*nyquist_freq`.
         nyquist_freq (float): nyquist frequency of the data (same units as size)
         sigma_erf (float): controls the steepness of the decay around the Nyquist frequency.
         s_0 (float): controls tradeoff between more uniform reconstruction at the cost of less directionality.

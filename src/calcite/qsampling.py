@@ -1,6 +1,6 @@
 """q-space sampling, for finding optimal samplings on the unit sphere.
 
-Code is taken from https://github.com/ecaruyer/qspace/tree/master
+Code is taken from https://github.com/ecaruyer/qspace/tree/master, with some additions.
 
 Implementation was first described in [1].
 
@@ -13,9 +13,10 @@ from typing import List
 
 import numpy
 from scipy.optimize import fmin_slsqp
+from scipy.spatial.transform import Rotation
 
 
-__all__ = ["optimize_multishell", "optimize_singleshell"]
+__all__ = ["optimize_multishell", "optimize_singleshell", "xyz_to_angle"]
 
 
 _epsilon = 1e-9
@@ -208,7 +209,7 @@ def optimize_multishell(
         args=(num_shells, num_pts_per_shell, weights, antipodal),
         iprint=0,
     )
-    vects = vects.reshape((k, 3)) # type: ignore
+    vects = vects.reshape((k, 3))  # type: ignore
     vects = (vects.T / numpy.sqrt((vects**2).sum(1))).T
     return vects
 
@@ -218,7 +219,6 @@ def optimize_singleshell(
     max_iter: int = 100,
     antipodal: bool = True,
     init_points: numpy.ndarray | None = None,
-    return_angles: bool = False,
 ) -> numpy.ndarray:
     """Find optimal sampling for a single three-dimensional shell.
 
@@ -227,7 +227,6 @@ def optimize_singleshell(
         max_iter (int, optional): maximum # of iterations to optimize for. Defaults to 100.
         antipodal (bool, optional):. Defaults to True.
         init_points (numpy.ndarray | None, optional): initial points for optimization. Defaults to None.
-        return_angles (bool, optional): return points as pair of angles (theta, phi). Defaults to False, which will return points in xyz.
 
     Returns:
         numpy.ndarray: points
@@ -238,12 +237,7 @@ def optimize_singleshell(
     points = optimize_multishell(
         1, [num_pts], weights, max_iter, antipodal, init_points
     )
-    if return_angles:
-        theta = numpy.arctan2(points[:, 1], points[:, 0])
-        phi = numpy.arccos(points[:, 2])
-        return numpy.vstack([theta, phi]).T
-    else:
-        return points
+    return points
 
 
 def random_uniform_on_sphere(k: int) -> numpy.ndarray:
@@ -280,3 +274,83 @@ def compute_weights(num_shells, num_points_per_shell, shell_groups, alphas):
             for j in shell_group:
                 weights[i, j] += alpha / total_nb_points**2
     return weights
+
+
+def xyz_to_angle(xyz: numpy.ndarray, fmt: str) -> numpy.ndarray:
+    """xyz_to_angle Convert xyz coordinates on a sphere (assumed radius=1) to an angle representation.
+
+    Args:
+        xyz (numpy.ndarray): points to be converted
+        fmt (str): angular format to convert to. See Notes for details.
+
+    Raises:
+        ValueError: if invalid format is given
+
+    Returns:
+        numpy.ndarray
+
+    Notes:
+        Valid formats for angles are:
+        1. "spherical" for spherical (theta, psi) coordinates
+        2. "matrix" return as rotation matrices
+        3. "euler_{CONVENTION} gives euler angles with the specified convention (see `scipy.spatial.transform.Rotation` for valid conventions). For example, for Z-X'-Z'' convention, use "euler_ZXZ".
+        4. "quat" for quaternions.
+    """
+    if fmt == "spherical":
+        theta = numpy.arctan2(xyz[:, 1], xyz[:, 0])
+        phi = numpy.arccos(xyz[:, 2])
+        return numpy.vstack([theta, phi]).T
+    else:  # build up matrices, then do conversion
+        psi = numpy.arctan2(xyz[:, 2], xyz[:, 0])
+        theta = numpy.arctan2(
+            xyz[:, 1],
+            numpy.sqrt(
+                numpy.add(numpy.square(xyz[:, 0]), numpy.square(xyz[:, 2]))
+            ),
+        )
+
+        def _build_matrix(p: float, t: float):
+            return numpy.asarray(
+                [
+                    [
+                        numpy.sin(p),
+                        numpy.cos(p) * numpy.cos(t),
+                        numpy.cos(p) * numpy.sin(t),
+                    ],
+                    [0, numpy.sin(t), -numpy.cos(t)],
+                    [
+                        -numpy.cos(p),
+                        numpy.sin(p) * numpy.cos(t),
+                        numpy.sin(p) * numpy.sin(t),
+                    ],
+                ]
+            )
+
+        mats = numpy.stack(
+            [_build_matrix(p, t) for p, t in zip(psi, theta)], axis=0
+        )
+        if fmt == "matrix":
+            return mats
+        else:
+            if fmt.startswith("euler"):
+                convention = fmt[-3:]
+
+                def eulerify(mat: numpy.ndarray) -> numpy.ndarray:
+                    rot = Rotation.from_matrix(mat)
+                    return rot.as_euler(convention)
+
+                return numpy.stack(
+                    [eulerify(mats[i, :, :]) for i in range(mats.shape[0])],
+                    axis=0,
+                )
+            elif fmt.startswith("quat"):
+
+                def quatify(mat: numpy.ndarray):
+                    return Rotation.from_matrix(mat).as_quat()
+
+                return numpy.stack(
+                    [quatify(mats[i, :, :]) for i in range(mats.shape[0])],
+                    axis=0,
+                )
+            else:
+                raise ValueError("invalid angle format")
