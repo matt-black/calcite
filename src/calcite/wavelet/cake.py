@@ -19,6 +19,7 @@ from jaxtyping import Complex
 from jaxtyping import Float
 from jaxtyping import Num
 from jaxtyping import Real
+from scipy.special import spherical_jn
 
 from .._util import angular_coordinate_grid_2d
 from .._util import angular_coordinate_grids_3d
@@ -39,6 +40,7 @@ __all__ = [
     "orientation_bank_2d_fourier",
     "orientation_bank_3d_fourier",
     "cake_wavelet_3d_fourier",
+    "cake_wavelet_3d_real",
     "split_cake_wavelet_fourier",
 ]
 
@@ -322,7 +324,7 @@ def orientation_bank_3d_fourier(
     big_ell: int,
     centered: bool = False,
     return_angles: bool = False,
-    angle_fmt: str = "euler_ZXZ",
+    angle_fmt: str = "spherical",
 ) -> (
     Complex[Array, "{num_ori} {size} {size} {size}"]
     | Tuple[
@@ -338,12 +340,12 @@ def orientation_bank_3d_fourier(
         gamma_window (float): gamma parameter for the radial window, fixes the inflection point for the rolloff at gamma*nyquist_freq
         nyquist_freq (float): nyquist frequency of the data
         sigma_erf (float): controls steepness of the decay around the Nyquist frequency.
-        s_0 (float):
+        s_0 (float): controls tradeoff between more uniform reconstruction at the cost of less directionality.
         s_rho (float|None):
         big_ell (int): order to compute the spherical harmonics up to.
         centered (bool, optional): whether the wavelets are centered in Fourier space (as if fftshift'd). Defaults to False.
         return_angles (bool, optional): return angles corresponding to each wavelet in the filter bank. Defaults to False.
-        angle_fmt (str, optional): the format to return the angles in, if `return_angles` is set to `True`. Defaults to "euler_ZXZ".
+        angle_fmt (str, optional): the format to return the angles in, if `return_angles` is set to `True`. Defaults to "spherical".
 
     Returns:
         Complex[Array, {num_ori} {size} {size} {size}] | Tuple[Complex[Array, {num_ori} {size} {size} {size}], Float[Array, ...]]
@@ -520,9 +522,11 @@ def _coeff_c_0l(ell: int, s0: float) -> Float[Array, ""]:
     Returns:
         float: coefficient value
     """
+    # legendre_l0 = legendre_scipy(ell, 0.)
     legendre_l0 = eval_legendre(ell, 0)  # type: ignore
     a_l0 = _coeff_a_0l(ell, s0)
-    return legendre_l0 * a_l0 + (1 - (jnp.pow(-1, ell)) / 2) * a_l0
+    # return (legendre_l0 + (1 - jnp.pow(-1, ell)) / 2.0) * a_l0
+    return legendre_l0 * a_l0 + (1 - (jnp.pow(-1, ell)) / 2.0) * a_l0
 
 
 def cake_wavelet_3d_fourier(
@@ -565,7 +569,7 @@ def cake_wavelet_3d_fourier(
     sph_harm = Partial(
         jax.scipy.special.sph_harm_y,
         jnp.array([0]),
-        jnp.array(range(0, big_ell + 1)),
+        jnp.arange(0, big_ell + 1, 1),
     )
     sigma_c0l_times_y0l = jnp.sum(
         c_0l * jax.vmap(sph_harm, (0, 0))(theta.flatten(), phi.flatten()),
@@ -582,6 +586,127 @@ def cake_wavelet_3d_fourier(
             (-size // 2, -size // 2, -size // 2),
             axis=(-3, -2, -1),
         )
+
+
+def _coeff_s_alpha_nl(
+    ell: int,
+    p: int,
+    alpha: int,
+    q: float,
+) -> Float:
+    n = ell + 2 * p
+    return jax.lax.select(
+        q == 0,
+        (
+            jnp.sqrt(jnp.pi)
+            * jax.scipy.special.gamma(1 + alpha)
+            / (4 * jax.scipy.special.gamma(2.5 + alpha))
+        )
+        * jnp.ones_like(q),
+        (jnp.pow(2, alpha) * jnp.pow(-1, p) * (p + 1))
+        * (spherical_jn(n + alpha + 1, q) / jnp.pow(q, alpha + 1)),
+    )
+
+
+def _coeff_c0_nl(ell: int, p: int, alpha: int, s0: float) -> Float:
+    legendre_l0 = eval_legendre(ell, 0)  # type: ignore
+    paren_term = legendre_l0 + (1 - (-1) ** ell) / 2
+    return paren_term * _coeff_a_0l(ell, s0) * _coeff_b_eqn101(ell, p, alpha)
+
+
+def _coeff_b_eqn101(
+    ell: int,
+    p: int,
+    alpha: int,
+) -> Float:
+    return jnp.sum(
+        jnp.asarray(
+            [_coeff_b_eqn101_singleterm(ell, p, alpha, i) for i in range(3)]
+        )
+    )
+
+
+def _coeff_b_eqn101_singleterm(
+    ell: int,
+    p: int,
+    alpha: int,
+    i: int,
+    beta: int = 2,
+) -> Float:
+    rho_max = jnp.sqrt((0.5 * beta) / (alpha + 0.5 * beta))
+    if i == 0:
+        c = 1 + jnp.pow(alpha + 1, 3) / (2 * alpha) * jnp.pow(rho_max, 4)
+    elif i == 1:
+        c = -2 * jnp.pow(alpha + 1, 3) / (2 * alpha) * jnp.square(rho_max)
+    elif i == 2:
+        c = jnp.pow(alpha + 1, 3) / (2 * alpha)
+    else:
+        raise ValueError("only calculated up for values i = 0,1,2")
+    b_numer = (beta - ell) / binomial_coefficient(2, p)
+    b_denom = (2 * alpha + beta + ell + 2 * p + 3) * binomial_coefficient(
+        0.5 * (beta + ell + 1) + alpha + p, alpha + p
+    )
+    b = b_numer / b_denom
+    return c * b
+
+
+def cake_wavelet_3d_real(
+    size: int,
+    alpha_super: int,
+    nyquist_freq: float,
+    s_0: float,
+    alpha: float,
+    beta: float,
+    gamma: float,
+    big_ell: int,
+    big_p: int = 21,
+) -> Complex[Array, "{size} {size} {size}"]:
+    """Create a 3D cake wavelet kernel.
+
+    Args:
+        size (int): size of output wavelet (will be size^3)
+        alpha_super (int):
+        nyquist_freq (float): nyquist frequency of the data
+        s_0 (float): controls tradeoff between more uniform reconstruction at the cost of less directionality.
+        alpha (float): rotation around x-axis
+        beta (float): rotation around y-axis
+        gamma (float): rotation around z-axis
+        big_ell (int): order to compute the spherical harmonics up to.
+        big_p (int): order to compute sum up to (l - n = 2p).
+
+    Returns:
+        Complex[Array, "{size} {size} {size}"]
+    """
+    # formulate grid to compute on in spherical coordinates (r, theta, phi)
+    x, y, z = jnp.meshgrid(*([jnp.linspace(-size / 2.0, size / 2.0, size)] * 3))
+    r = jnp.sqrt(jnp.square(x) + jnp.square(y) + jnp.square(z))
+    theta, phi = angular_coordinate_grids_3d(size, alpha, beta, gamma)
+
+    # function to generate a single term
+    # see Eqn. 105 of [1]
+    def _single_term(r: Float, theta: Float, phi: Float, _ell: int, _p: int):
+        c0_nl = _coeff_c0_nl(_ell, _p, alpha_super, s_0)
+        sa_nl = _coeff_s_alpha_nl(
+            _ell, _p, alpha_super, 2 * jnp.pi * r * nyquist_freq
+        )
+        sph_harm = jax.vmap(
+            Partial(
+                jax.scipy.special.sph_harm_y, jnp.array([0]), jnp.array([_ell])
+            ),
+            (0, 0),
+            0,
+        )(theta.flatten(), phi.flatten()).reshape(phi.shape)
+        oth_term = 4 * jnp.pi * jnp.pow(jax.lax.complex(0.0, 1.0), _ell)
+        out = c0_nl * oth_term * sa_nl * sph_harm
+        return out
+
+    map_fun = Partial(_single_term, r, theta, phi)
+    components = []
+    for p in range(big_p):
+        for ell in range(big_ell):
+            components.append(map_fun(ell, p))
+    components = jnp.stack(components, axis=0)
+    return jnp.nansum(components, axis=0)
 
 
 def split_cake_wavelet_fourier(
