@@ -121,10 +121,12 @@ def waverec(
     else:  # make sure we have a list of DiscreteWavelet objects
         wavelets = list(map(_build_or_id_wavelet, wavelets))
 
+    # build up list, one element per level, indicating whether the next level should be reconstructed with odd dimensionality.
     rec_odds = []
     for details in coeffs[1:]:
         det = details[0]
-        rec_odds.append([det.shape[i] % 2 > 0 for i in range(det.ndim)])
+        rec_odds.append(tuple([det.shape[i] % 2 > 0 for i in range(det.ndim)]))
+    rec_odds.append(recon_odd)
     for idx, details in enumerate(coeffs):
         if len(details) == 1:  # 1d, c_d
             c_d = details[0]
@@ -227,6 +229,7 @@ def dwt(
         if isinstance(dec_pairs, tuple):
             dec_lor, dec_hir = dec_pairs
             dec_loz, dec_hiz = dec_pairs
+            dec_lo, dec_hi = dec_pairs
         else:
             dec_lo, dec_hi = dec_pairs[2]
             if len(dec_pairs) == 1:
