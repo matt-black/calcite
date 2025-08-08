@@ -23,7 +23,7 @@ _epsilon = 1e-9
 
 
 def _equality_constraints(vects: numpy.ndarray, *args):
-    """_equality_constraints computer the spherical equality constraint.
+    """Compute the spherical equality constraint.
 
     Returns 0 if vects lies on the unit sphere.
 
@@ -44,7 +44,7 @@ def _electrostatic_repulsion(
     antipodal: bool = True,
     alpha: float = 1.0,
 ) -> float:
-    """_electrostatic_repulsion electrostatic-repulsion objective function. The alpha paramter controls the power repulsion (energy varies as $1 / r^alpha$).
+    """Calculate the electrostatic-repulsion objective function. The alpha paramter controls the power repulsion (energy varies as $1 / r^alpha$).
 
     Args:
         vects (numpy.ndarray): array of vectors, (Nx3,)
@@ -74,7 +74,7 @@ def _electrostatic_repulsion(
 def _grad_electrostatic_repulsion(
     vects, weight_matrix, antipodal=True, alpha=1.0
 ) -> numpy.ndarray:
-    """_grad_electrostatic_repulsion 1st-order derivative of electrostatic-like repulsion energy.
+    """Compute the 1st-order derivative of electrostatic-like repulsion energy.
 
     Args:
         vects (numpy.ndarray): array of input vectors, (Nx3,)
@@ -117,7 +117,7 @@ def _cost_function(
     weights: numpy.ndarray,
     antipodal: bool = True,
 ) -> float:
-    """_cost_function objective function for multiple-shell energy.
+    """Compute the objective function for multiple-shell energy.
 
     Args:
         vects (numpy.ndarray):
@@ -147,7 +147,7 @@ def _grad_cost(
     weights: numpy.ndarray,
     antipodal: bool = True,
 ):
-    """_grad_cost gradient of the objective function for multiple shells sampling.
+    """Compute the gradient of the objective function for multiple shells sampling.
 
     Args:
         vects (numpy.ndarray) : array-like shape (N * 3,)
@@ -241,7 +241,7 @@ def optimize_singleshell(
 
 
 def random_uniform_on_sphere(k: int) -> numpy.ndarray:
-    """random_uniform_on_sphere generate a set of k random unit vectors, following a uniform  distribution on the sphere.
+    """Generate a set of k random unit vectors, following a uniform  distribution on the sphere.
 
     Args:
         k (int): number of vectors to generate
@@ -257,7 +257,7 @@ def random_uniform_on_sphere(k: int) -> numpy.ndarray:
 
 
 def compute_weights(num_shells, num_points_per_shell, shell_groups, alphas):
-    """compute_weights Compute the weights array from a set of shell groups to couple, and coupling weights.
+    """Compute the weights array from a set of shell groups to couple, and coupling weights.
 
     Args:
         num_shells (int): # of shells
@@ -277,7 +277,7 @@ def compute_weights(num_shells, num_points_per_shell, shell_groups, alphas):
 
 
 def xyz_to_angle(xyz: numpy.ndarray, fmt: str) -> numpy.ndarray:
-    """xyz_to_angle Convert xyz coordinates on a sphere (assumed radius=1) to an angle representation.
+    """Convert xyz coordinates on a sphere (assumed radius=1) to an angle representation.
 
     Args:
         xyz (numpy.ndarray): points to be converted

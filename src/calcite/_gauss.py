@@ -12,7 +12,7 @@ from jaxtyping import Real
 def gaussian_kernel_1d(
     sigma: float, order: int, radius: int
 ) -> Float[Array, " 2 * {radius}"]:
-    """gaussian_kernel_1d 1-D gaussian kernel.
+    """Generate a 1-D gaussian kernel.
 
     Args:
         sigma (float): standard deviation
@@ -63,7 +63,7 @@ def gaussian_filter_1d(
     cval: float = 0.0,
     precision: PrecisionLike | None = None,
 ) -> Real[Array, " a"]:
-    """gaussian_filter_1d 1-D gaussian filter.
+    """Apply 1-D gaussian filter to an axis of the input.
 
     Args:
         input (Real[Array]): input array
@@ -120,7 +120,7 @@ def gaussian_filter(
     axis: int | None = None,
     precision: PrecisionLike | None = None,
 ) -> Real[Array, " a"]:
-    """gaussian_filter multi-dimensional Gaussian filter.
+    """Apply a multi-dimensional Gaussian filter.
 
     Args:
         input (Real[Array]): input array

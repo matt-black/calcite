@@ -6,6 +6,7 @@ TODO: more text here, explanation
 import math
 import operator
 from collections.abc import Callable
+from functools import partial
 from typing import List
 from typing import Optional
 from typing import Sequence
@@ -62,7 +63,7 @@ def wavedec(
         filt_len = len(dec_pairs[0])
     else:
         wavelets = list(map(_build_or_id_wavelet, wavelets))
-        dec_pairs = [(wvlet.dec_lo, wvlet.dec_hi) for wvlet in wavelets] # type: ignore
+        dec_pairs = [(wvlet.dec_lo, wvlet.dec_hi) for wvlet in wavelets]  # type: ignore
         filt_len = min(map(lambda p: len(p[0]), dec_pairs))
     min_axis_shape = min(x.shape)
     if level is None:
@@ -88,6 +89,7 @@ def waverec(
     coeffs: List[List[Array]],
     wavelets: str | DiscreteWavelet | Sequence[Union[str, DiscreteWavelet]],
     pad_mode: str = "symmetric",
+    recon_odd: tuple[bool, ...] | None = None,
 ) -> Array:
     """Compute the multilevel inverse discrete wavelet transform.
 
@@ -100,6 +102,13 @@ def waverec(
     Returns:
         Array: array reconstructed from input coefficients.
     """
+    if recon_odd is None:
+        recon_odd = tuple(
+            [
+                False,
+            ]
+            * approx.ndim
+        )
     coeffs.reverse()
     if isinstance(wavelets, str):
         wavelets = [
@@ -112,11 +121,24 @@ def waverec(
     else:  # make sure we have a list of DiscreteWavelet objects
         wavelets = list(map(_build_or_id_wavelet, wavelets))
 
-    for details in coeffs:
+    rec_odds = []
+    for details in coeffs[1:]:
+        det = details[0]
+        rec_odds.append([det.shape[i] % 2 > 0 for i in range(det.ndim)])
+    for idx, details in enumerate(coeffs):
         if len(details) == 1:  # 1d, c_d
             c_d = details[0]
             approx = idwt_1d(
-                approx, c_d, wavelets[0].rec_lo, wavelets[0].rec_hi, pad_mode # type: ignore
+                approx,
+                c_d,
+                wavelets[
+                    0
+                ].rec_lo,  # pyright: ignore[reportAttributeAccessIssue]
+                wavelets[
+                    0
+                ].rec_hi,  # pyright: ignore[reportAttributeAccessIssue]
+                pad_mode,
+                rec_odds[idx][0],
             )
         elif len(details) == 3:  # 2d, (c_da, c_ad, c_dd)
             c_da, c_ad, c_dd = details
@@ -129,11 +151,12 @@ def waverec(
                 c_da,
                 c_ad,
                 c_dd,
-                wv_col.rec_lo, # type: ignore
-                wv_col.rec_hi, # type: ignore
-                wv_row.rec_lo, # type: ignore
-                wv_row.rec_hi, # type: ignore
+                wv_col.rec_lo,
+                wv_col.rec_hi,
+                wv_row.rec_lo,
+                wv_row.rec_hi,
                 pad_mode,
+                rec_odds[idx],
             )
         elif len(details) == 7:  # 3d
             c_aad, c_ada, c_add, c_daa, c_dad, c_dda, c_ddd = details
@@ -150,13 +173,14 @@ def waverec(
                 c_dad,
                 c_dda,
                 c_ddd,
-                wv_c.rec_lo, # type: ignore
-                wv_c.rec_hi, # type: ignore
-                wv_r.rec_lo, # type: ignore
-                wv_r.rec_hi, # type: ignore
-                wv_z.rec_lo, # type: ignore
-                wv_z.rec_hi, # type: ignore
+                wv_c.rec_lo,
+                wv_c.rec_hi,
+                wv_r.rec_lo,
+                wv_r.rec_hi,
+                wv_z.rec_lo,
+                wv_z.rec_hi,
                 pad_mode,
+                rec_odds[idx],
             )
         else:
             raise ValueError("invalid detail coefficient list")
@@ -187,7 +211,7 @@ def dwt(
             dec_lo, dec_hi = dec_pairs[0]
         else:
             dec_lo, dec_hi = dec_pairs
-        return dwt_1d(x, dec_lo, dec_hi, pad_mode) # type: ignore
+        return dwt_1d(x, dec_lo, dec_hi, pad_mode)  # type: ignore
     elif num_dims == 2:
         if isinstance(dec_pairs, tuple):
             dec_lo, dec_hi = dec_pairs
@@ -198,7 +222,7 @@ def dwt(
                 dec_lor, dec_hir = dec_lo, dec_hi
             else:
                 dec_lor, dec_hir = dec_pairs[0]
-        return dwt_2d(x, dec_lo, dec_hi, dec_lor, dec_hir, pad_mode) # type: ignore
+        return dwt_2d(x, dec_lo, dec_hi, dec_lor, dec_hir, pad_mode)  # type: ignore
     elif num_dims == 3:
         if isinstance(dec_pairs, tuple):
             dec_lor, dec_hir = dec_pairs
@@ -212,12 +236,13 @@ def dwt(
                 dec_lor, dec_hir = dec_pairs[1]
                 dec_loz, dec_hiz = dec_pairs[0]
         return dwt_3d(
-            x, dec_lo, dec_hi, dec_lor, dec_hir, dec_loz, dec_hiz, pad_mode # type: ignore
+            x, dec_lo, dec_hi, dec_lor, dec_hir, dec_loz, dec_hiz, pad_mode  # type: ignore
         )
     else:
         raise ValueError("invalid # of dimensions, only valid for 1/2d inputs")
 
 
+@partial(jax.jit, static_argnums=(3,))
 def dwt_1d(
     x: Num[Array, " s"],
     dec_lo: Float[Array, " t"],
@@ -260,12 +285,14 @@ def dwt_1d(
     return lo, hi
 
 
+@partial(jax.jit, static_argnums=(4, 5))
 def idwt_1d(
     c_a: Num[Array, " s"],
     c_d: Num[Array, " s"],
     rec_lo: Float[Array, " t"],
     rec_hi: Float[Array, " t"],
     pad_mode: str,
+    recon_odd: bool,
 ) -> Num[Array, " s"]:
     """Inverse discrete wavelet transform in one-dimension.
 
@@ -294,11 +321,12 @@ def idwt_1d(
     else:
         skip = half_fl - 1
         if skip > 0:
-            return recon[skip:-skip]
+            return recon[skip : -(skip + int(recon_odd))]
         else:
-            return recon
+            return recon[:-1] if recon_odd else recon
 
 
+@partial(jax.jit, static_argnums=(5,))
 def dwt_2d(
     x: Num[Array, "r c"],
     dec_lo: Float[Array, " s"],
@@ -346,6 +374,7 @@ def dwt_2d(
     return c_aa, c_da, c_ad, c_dd
 
 
+@partial(jax.jit, static_argnums=(8, 9))
 def idwt_2d(
     c_aa: Num[Array, "r c"],
     c_da: Num[Array, "r c"],
@@ -356,6 +385,7 @@ def idwt_2d(
     rec_lo_row: Optional[Float[Array, " t"]],
     rec_hi_row: Optional[Float[Array, " t"]],
     pad_mode: str,
+    recon_odd: tuple[bool, bool] = (False, False),
 ) -> Num[Array, "y x"]:
     """Inverse discrete wavelet transform in 2-dimensions.
 
@@ -375,13 +405,18 @@ def idwt_2d(
         rec_lo_row = rec_lo
     if rec_hi_row is None:
         rec_hi_row = rec_hi
-    c_a = _apply_along_axis_2(idwt_1d, 1, c_aa, c_ad, rec_lo, rec_hi, pad_mode)
-    c_d = _apply_along_axis_2(idwt_1d, 1, c_da, c_dd, rec_lo, rec_hi, pad_mode)
+    c_a = _apply_along_axis_2(
+        idwt_1d, 1, c_aa, c_ad, rec_lo, rec_hi, pad_mode, recon_odd[1]
+    )
+    c_d = _apply_along_axis_2(
+        idwt_1d, 1, c_da, c_dd, rec_lo, rec_hi, pad_mode, recon_odd[1]
+    )
     return _apply_along_axis_2(
-        idwt_1d, 0, c_a, c_d, rec_lo_row, rec_hi_row, pad_mode
+        idwt_1d, 0, c_a, c_d, rec_lo_row, rec_hi_row, pad_mode, recon_odd[0]
     )
 
 
+@partial(jax.jit, static_argnums=(14, 15))
 def idwt_3d(
     c_aaa: Num[Array, "z r c"],
     c_aad: Num[Array, "z r c"],
@@ -398,6 +433,7 @@ def idwt_3d(
     rec_lo_z: Optional[Float[Array, " t"]],
     rec_hi_z: Optional[Float[Array, " t"]],
     pad_mode: str,
+    recon_odd: tuple[bool, bool, bool] = (False, False, False),
 ) -> Num[Array, "w y x"]:
     """Inverse discrete wavelet transform in 3 dimensions.
 
@@ -418,28 +454,29 @@ def idwt_3d(
         Array: reconstructed array
     """
     c_dd = _apply_along_axis_2(
-        idwt_1d, 2, c_dda, c_ddd, rec_lo, rec_hi, pad_mode
+        idwt_1d, 2, c_dda, c_ddd, rec_lo, rec_hi, pad_mode, recon_odd[2]
     )
     c_da = _apply_along_axis_2(
-        idwt_1d, 2, c_daa, c_dad, rec_lo, rec_hi, pad_mode
+        idwt_1d, 2, c_daa, c_dad, rec_lo, rec_hi, pad_mode, recon_odd[2]
     )
     c_ad = _apply_along_axis_2(
-        idwt_1d, 2, c_ada, c_add, rec_lo, rec_hi, pad_mode
+        idwt_1d, 2, c_ada, c_add, rec_lo, rec_hi, pad_mode, recon_odd[2]
     )
     c_aa = _apply_along_axis_2(
-        idwt_1d, 2, c_aaa, c_aad, rec_lo, rec_hi, pad_mode
+        idwt_1d, 2, c_aaa, c_aad, rec_lo, rec_hi, pad_mode, recon_odd[2]
     )
     c_a = _apply_along_axis_2(
-        idwt_1d, 1, c_aa, c_ad, rec_lo_row, rec_hi_row, pad_mode
+        idwt_1d, 1, c_aa, c_ad, rec_lo_row, rec_hi_row, pad_mode, recon_odd[1]
     )
     c_d = _apply_along_axis_2(
-        idwt_1d, 1, c_da, c_dd, rec_lo_row, rec_hi_row, pad_mode
+        idwt_1d, 1, c_da, c_dd, rec_lo_row, rec_hi_row, pad_mode, recon_odd[1]
     )
     return _apply_along_axis_2(
-        idwt_1d, 0, c_a, c_d, rec_lo_z, rec_hi_z, pad_mode
+        idwt_1d, 0, c_a, c_d, rec_lo_z, rec_hi_z, pad_mode, recon_odd[0]
     )
 
 
+@partial(jax.jit, static_argnums=(7,))
 def dwt_3d(
     x: Num[Array, "z r c"],
     dec_lo: Float[Array, " s"],
@@ -463,10 +500,24 @@ def dwt_3d(
     """
     if jnp.iscomplexobj(x):
         aaa_r, aad_r, ada_r, add_r, daa_r, dad_r, dda_r, ddd_r = dwt_3d(
-            jnp.real(x), dec_lo, dec_hi, dec_lo_row, dec_hi_row, dec_lo_z, dec_hi_z, pad_mode
+            jnp.real(x),
+            dec_lo,
+            dec_hi,
+            dec_lo_row,
+            dec_hi_row,
+            dec_lo_z,
+            dec_hi_z,
+            pad_mode,
         )
         aaa_i, aad_i, ada_i, add_i, daa_i, dad_i, dda_i, ddd_i = dwt_3d(
-            jnp.imag(x), dec_lo, dec_hi, dec_lo_row, dec_hi_row, dec_lo_z, dec_hi_z, pad_mode
+            jnp.imag(x),
+            dec_lo,
+            dec_hi,
+            dec_lo_row,
+            dec_hi_row,
+            dec_lo_z,
+            dec_hi_z,
+            pad_mode,
         )
         c_aaa = jax.lax.complex(aaa_r, aaa_i)
         c_aad = jax.lax.complex(aad_r, aad_i)
@@ -505,6 +556,7 @@ def dwt_3d(
     return c_aaa, c_aad, c_ada, c_add, c_daa, c_dad, c_dda, c_ddd
 
 
+@partial(jax.jit, static_argnums=(1,))
 def _upsample_interleave_zeros(
     x: Num[Array, " s"], factor: int
 ) -> Num[Array, " 2*s"]:
