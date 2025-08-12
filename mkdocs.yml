@@ -9,3 +9,10 @@ theme:
 plugins:
   - search
   - mkdocstrings
+      default_handler: python
+      locale: en
+      handlers:
+          python:
+              options:
+                  show_source: false
+              paths: [src]
